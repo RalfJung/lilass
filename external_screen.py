@@ -10,17 +10,19 @@ def getXrandrInformation():
 	connector = None # current connector
 	for line in p.stdout:
 		# new connector?
-		m = re.search('^([\w]+) connected ', line)
+		m = re.search(r'^([\w]+) connected ', line)
 		if m is not None:
 			connector = m.groups()[0]
 			assert connector not in connectors
 			connectors[connector] = []
 			continue
 		# new resolution?
-		m = re.search('^   ([\d]+)x([\d]+) +', line)
+		m = re.search(r'^   ([\d]+)x([\d]+) +', line)
 		if m is not None:
 			assert connector is not None
 			connectors[connector].append((int(m.groups()[0]), int(m.groups()[1])))
+	p.communicate()
+	if p.returncode != 0: raise Exception("Querying xrandr for data failed")
 	return connectors
 
 def res2str(res):
@@ -50,6 +52,6 @@ if externalResolutions is not None: # we need to ask what to do
 	else:
 		externalArgs += ["--right-of", internalName]
 # and do it
-args = ["--output", internalName] + internalArgs + ["--output", externalName] + externalArgs
-print args
-subprocess.check_call(["xrandr"] + args)
+call = ["xrandr", "--output", internalName] + internalArgs + ["--output", externalName] + externalArgs
+print "Call that will be made:",call
+subprocess.check_call(call)
