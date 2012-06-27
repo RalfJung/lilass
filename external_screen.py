@@ -17,11 +17,15 @@ def getXrandrInformation():
 			connectors[connector] = []
 			continue
 		# new resolution?
-		m = re.search('^   ([\d]+x[\d]+) +', line)
+		m = re.search('^   ([\d]+)x([\d]+) +', line)
 		if m is not None:
 			assert connector is not None
-			connectors[connector].append(int(m.groups()[0]))
+			connectors[connector].append((int(m.groups()[0]), int(m.groups()[1])))
 	return connectors
+
+def res2str(res):
+	(w, h) = res
+	return str(w)+'x'+str(h)
 
 # Check screen setup
 internalName = "LVDS"
@@ -31,10 +35,10 @@ internalResolutions = connectors[internalName] # there must be a screen assoicat
 externalResolutions = connectors.get(externalName)
 
 # Check what to do
-internalArgs = ["--mode", internalResolutions[0]] # there must be a resolution for the internal screen
+internalArgs = ["--mode", res2str(internalResolutions[0])] # there must be a resolution for the internal screen
 externalArgs = ["--off"]
 if externalResolutions is not None: # we need to ask what to do
-	extPosition = PositionSelection(externalResolutions)
+	extPosition = PositionSelection(map(res2str, externalResolutions))
 	extPosition.exec_()
 	if not extPosition.result(): sys.exit(1) # the user canceled
 	# build command-line
