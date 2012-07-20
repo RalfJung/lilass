@@ -1,60 +1,55 @@
 #!/usr/bin/python
-from PyQt4 import QtGui
+from PyQt4 import QtCore, QtGui
+
+def makeLayout(parent, layout, widgets):
+	for w in widgets:
+		layout.addWidget(w)
+	parent.setLayout(layout)
 
 class PositionSelection(QtGui.QDialog):
 	LEFT = 10
 	RIGHT = 20
 	EXTERNAL_ONLY = 30
 	
-	def __init__(self, resolutions):
-		super(PositionSelection, self).__init__()   
+	def __init__(self, externalResolutions):
+		# set up main window
+		super(PositionSelection, self).__init__()
+		self.setWindowTitle('External screen setup')
 		
-		mainBox = QtGui.QVBoxLayout()
-		posBox = QtGui.QHBoxLayout()
-		resBox = QtGui.QHBoxLayout()
+		# first box: position selection
+		posBox = QtGui.QGroupBox('Position of external screen', self)
+		self.posLeft = QtGui.QRadioButton('Left of internal screen', posBox)
+		self.posRight = QtGui.QRadioButton('Right of internal screen', posBox)
+		self.posRight.setChecked(True)
+		self.posRight.setFocus()
+		self.extOnly = QtGui.QRadioButton('Use external screen exclusively', posBox)
+		makeLayout(posBox, QtGui.QVBoxLayout(), [self.posLeft, self.posRight, self.extOnly])
 		
-		# First row: Resolution selection
-		mainBox.addLayout(resBox)
-		resBox.addWidget(QtGui.QLabel('Select the resolution of the external screen:'))
-		self.resolutions = QtGui.QComboBox(self)
-		for res in resolutions:
+		# second box: resolution selection
+		resBox = QtGui.QGroupBox('Resolution of external screen', self)
+		resLabel = QtGui.QLabel('Select the resolution of the external screen:', resBox)
+		self.resolutions = QtGui.QComboBox(resBox)
+		for res in externalResolutions:
 			self.resolutions.addItem(res)
 		self.resolutions.setCurrentIndex(0) # select first resolution
-		resBox.addWidget(self.resolutions)
+		makeLayout(resBox, QtGui.QHBoxLayout(), [resLabel, self.resolutions])
 		
-		# Next two rows: Position selection
-		mainBox.addWidget(QtGui.QLabel('Select the position of the external screen relative to the internal one:'))
-		mainBox.addLayout(posBox)
-
-		btn = QtGui.QPushButton('Left', self)
-		btn.clicked.connect(self.left)
-		posBox.addWidget(btn)
-
-		btn = QtGui.QPushButton('Right', self)
-		btn.clicked.connect(self.right)
-		btn.setFocus()
-		posBox.addWidget(btn)
-
-		btn = QtGui.QPushButton('External only', self)
-		btn.clicked.connect(self.externalOnly)
-		posBox.addWidget(btn)
-
-		# Finalization
-		self.setLayout(mainBox)
-		self.setWindowTitle('External screen setup')
+		# last row: buttons
+		buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel, QtCore.Qt.Horizontal, self)
+		buttons.accepted.connect(self.accept)
+		buttons.rejected.connect(self.reject)
+		
+		# add them all to the window
+		makeLayout(self, QtGui.QVBoxLayout(), [posBox, resBox, buttons])
 	
 	def accept(self):
+		# store return values
+		if self.posLeft.isChecked():
+			self.position = PositionSelection.LEFT
+		elif self.posRight.isChecked():
+			self.position = PositionSelection.RIGHT
+		else:
+			self.position = PositionSelection.EXTERNAL_ONLY
 		self.resolution = str(self.resolutions.currentText())
+		# go on with default behaviour
 		super(PositionSelection, self).accept()  
-	
-	def left(self):
-		self.position = PositionSelection.LEFT
-		self.accept()
-	
-	def right(self):
-		self.position = PositionSelection.RIGHT
-		self.accept()
-	
-	def externalOnly(self):
-		self.position = PositionSelection.EXTERNAL_ONLY
-		self.accept()
