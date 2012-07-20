@@ -37,20 +37,31 @@ internalResolutions = connectors[internalName] # there must be a screen assoicat
 externalResolutions = connectors.get(externalName)
 
 # Check what to do
-internalArgs = ["--mode", res2str(internalResolutions[0])] # there must be a resolution for the internal screen
-externalArgs = ["--off"]
 if externalResolutions is not None: # we need to ask what to do
-	extPosition = PositionSelection(map(res2str, externalResolutions))
+	extPosition = PositionSelection(map(res2str, internalResolutions), map(res2str, externalResolutions))
 	extPosition.exec_()
 	if not extPosition.result(): sys.exit(1) # the user canceled
+	extResolution = res2str(externalResolutions[extPosition.extResolutions.currentIndex()])
+	intResolution = res2str(internalResolutions[extPosition.intResolutions.currentIndex()])
 	# build command-line
-	externalArgs = ["--mode", extPosition.resolution] # we definitely want an external screen
-	if extPosition.position == PositionSelection.EXTERNAL_ONLY:
+	externalArgs = ["--mode", extResolution] # we definitely want an external screen
+	if extPosition.extOnly.isChecked():
 		internalArgs = ["--off"]
-	elif extPosition.position == PositionSelection.LEFT:
-		externalArgs += ["--left-of", internalName]
+		externalArgs += ["--primary"]
 	else:
-		externalArgs += ["--right-of", internalName]
+		# there are two screens
+		internalArgs = ["--mode", intResolution]
+		if extPosition.posLeft.isChecked():
+			externalArgs += ["--left-of", internalName]
+		else:
+			externalArgs += ["--right-of", internalName]
+		if extPosition.primExt.isChecked():
+			externalArgs += ["--primary"]
+		else:
+			internalArgs += ["--primary"]
+else:
+	internalArgs = ["--mode", res2str(internalResolutions[0]), "--primary"] # there must be a resolution for the internal screen
+	externalArgs = ["--off"]
 # and do it
 call = ["xrandr", "--output", internalName] + internalArgs + ["--output", externalName] + externalArgs
 print "Call that will be made:",call
