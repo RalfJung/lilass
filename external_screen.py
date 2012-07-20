@@ -25,9 +25,21 @@ def getXrandrInformation():
 	if p.returncode != 0: raise Exception("Querying xrandr for data failed")
 	return connectors
 
-def res2str(res):
+def res2xrandr(res):
 	(w, h) = res
 	return str(w)+'x'+str(h)
+
+def res2user(res):
+	(w, h) = res
+	# get ratio
+	ratio = int(round(16.0*h/w))
+	if ratio == 12: # 16:12 = 4:3
+		strRatio = '4:3'
+	elif ratio == 13: # 16:12.8 = 5:4
+		strRatio = '5:4'
+	else: # let's just hope this will never be 14 or more...
+		strRatio = '16:%d' % ratio
+	return '%dx%d (%s)' %(w, h, strRatio)
 
 # Check screen setup
 internalName = "LVDS"
@@ -38,11 +50,11 @@ externalResolutions = connectors.get(externalName)
 
 # Check what to do
 if externalResolutions is not None: # we need to ask what to do
-	extPosition = PositionSelection(map(res2str, internalResolutions), map(res2str, externalResolutions))
+	extPosition = PositionSelection(map(res2user, internalResolutions), map(res2user, externalResolutions))
 	extPosition.exec_()
 	if not extPosition.result(): sys.exit(1) # the user canceled
-	extResolution = res2str(externalResolutions[extPosition.extResolutions.currentIndex()])
-	intResolution = res2str(internalResolutions[extPosition.intResolutions.currentIndex()])
+	extResolution = res2xrandr(externalResolutions[extPosition.extResolutions.currentIndex()])
+	intResolution = res2xrandr(internalResolutions[extPosition.intResolutions.currentIndex()])
 	# build command-line
 	externalArgs = ["--mode", extResolution] # we definitely want an external screen
 	if extPosition.extOnly.isChecked():
@@ -60,7 +72,7 @@ if externalResolutions is not None: # we need to ask what to do
 		else:
 			internalArgs += ["--primary"]
 else:
-	internalArgs = ["--mode", res2str(internalResolutions[0]), "--primary"] # there must be a resolution for the internal screen
+	internalArgs = ["--mode", res2str(internalResolutions[0]), "--primary"]
 	externalArgs = ["--off"]
 # and do it
 call = ["xrandr", "--output", internalName] + internalArgs + ["--output", externalName] + externalArgs
