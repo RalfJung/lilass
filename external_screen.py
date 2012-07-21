@@ -72,7 +72,7 @@ if externalResolutions is not None: # we need to ask what to do
 		else:
 			internalArgs += ["--primary"]
 else:
-	internalArgs = ["--mode", res2str(internalResolutions[0]), "--primary"]
+	internalArgs = ["--mode", res2xrandr(internalResolutions[0]), "--primary"]
 	externalArgs = ["--off"]
 # and do it
 call = ["xrandr", "--output", internalName] + internalArgs + ["--output", externalName] + externalArgs
