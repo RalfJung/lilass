@@ -42,39 +42,50 @@ def res2user(res):
 	return '%dx%d (%s)' %(w, h, strRatio)
 
 # Check screen setup
-internalName = "LVDS"
-externalName = "CRT1"
+internalName = "LVDS1"
+externalNames = ["HDMI1", "VGA1"]
 connectors = getXrandrInformation()
 internalResolutions = connectors[internalName] # there must be a screen assoicated to the internal connector
-externalResolutions = connectors.get(externalName)
+externalName = None # *the* external connector which is actually used
+externalResolutions = None # resultions of the external connector
+args = {} # maps connector names to xrand arguments
+
+# look for enabled external screen, disable all the others
+for name in externalNames:
+	if externalResolutions is None and name in connectors:
+		externalName = name
+		externalResolutions = connectors[name]
+	else:
+		args[name] = ["--off"]
 
 # Check what to do
-if externalResolutions is not None: # we need to ask what to do
-	extPosition = PositionSelection(map(res2user, internalResolutions), map(res2user, externalResolutions))
+if externalName is not None: # we need to ask what to do
+	extPosition = PositionSelection(externalName, map(res2user, internalResolutions), map(res2user, externalResolutions))
 	extPosition.exec_()
 	if not extPosition.result(): sys.exit(1) # the user canceled
 	extResolution = res2xrandr(externalResolutions[extPosition.extResolutions.currentIndex()])
 	intResolution = res2xrandr(internalResolutions[extPosition.intResolutions.currentIndex()])
 	# build command-line
-	externalArgs = ["--mode", extResolution] # we definitely want an external screen
+	args[externalName] = ["--mode", extResolution] # we definitely want an external screen
 	if extPosition.extOnly.isChecked():
-		internalArgs = ["--off"]
-		externalArgs += ["--primary"]
+		args[internalName] = ["--off"]
+		args[externalName] += ["--primary"]
 	else:
 		# there are two screens
-		internalArgs = ["--mode", intResolution]
+		args[internalName] = ["--mode", intResolution]
 		if extPosition.posLeft.isChecked():
-			externalArgs += ["--left-of", internalName]
+			args[externalName] += ["--left-of", internalName]
 		else:
-			externalArgs += ["--right-of", internalName]
+			args[externalName] += ["--right-of", internalName]
 		if extPosition.primExt.isChecked():
-			externalArgs += ["--primary"]
+			args[externalName] += ["--primary"]
 		else:
-			internalArgs += ["--primary"]
+			args[internalName] += ["--primary"]
 else:
-	internalArgs = ["--mode", res2xrandr(internalResolutions[0]), "--primary"]
-	externalArgs = ["--off"]
+	args[internalName] = ["--mode", res2xrandr(internalResolutions[0]), "--primary"]
 # and do it
-call = ["xrandr", "--output", internalName] + internalArgs + ["--output", externalName] + externalArgs
+call = ["xrandr"]
+for name in args:
+	call += ["--output", name] + args[name]
 print "Call that will be made:",call
 subprocess.check_call(call)

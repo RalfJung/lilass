@@ -14,10 +14,10 @@ class PositionSelection(QtGui.QDialog):
 	RIGHT = 20
 	EXTERNAL_ONLY = 30
 	
-	def __init__(self, internalResolutions, externalResolutions):
+	def __init__(self, externalName, internalResolutions, externalResolutions):
 		# set up main window
 		super(PositionSelection, self).__init__()
-		self.setWindowTitle('External screen setup')
+		self.setWindowTitle('External screen setup (connector: %s)' % externalName)
 		
 		# position selection
 		posBox = QtGui.QGroupBox('Position of external screen', self)
