@@ -43,7 +43,7 @@ def res2user(res):
 
 # Check screen setup
 internalName = "LVDS1"
-externalNames = ["HDMI1", "VGA1"]
+externalNames = ["HDMI1", "DP1", "VGA1"]
 connectors = getXrandrInformation()
 internalResolutions = connectors[internalName] # there must be a screen assoicated to the internal connector
 externalName = None # *the* external connector which is actually used
