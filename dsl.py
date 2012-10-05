@@ -6,13 +6,18 @@ from PyQt4 import QtGui
 from selector_window import PositionSelection
 app = QtGui.QApplication(sys.argv)
 
+# for auto-config: common names of internal connectors
+commonInternalConnectorNames = ['LVDS', 'LVDS1']
+
 # Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
 def loadConfigFile(file):
 	import shlex
+	result = {}
+	if not os.path.exists(file):
+		return result # no config file
 	# read config file
 	linenr = 0
 	with open(file) as file:
-		result = {}
 		for line in file:
 			linenr += 1
 			line = line.strip()
@@ -34,7 +39,7 @@ def getXrandrInformation():
 	connector = None # current connector
 	for line in p.stdout:
 		# new connector?
-		m = re.search(r'^([\w]+) connected ', line)
+		m = re.search(r'^([\w]+) (dis)?connected ', line)
 		if m is not None:
 			connector = m.groups()[0]
 			assert connector not in connectors
@@ -65,22 +70,38 @@ def res2user(res):
 		strRatio = '16:%d' % ratio
 	return '%dx%d (%s)' %(w, h, strRatio)
 
-def findAvailableConnector(tryConnectors, availableConnectors):
+def findAvailableConnector(tryConnectors):
 	for connector in tryConnectors:
-		if connector in availableConnectors: return connector
+		if connector in connectors and connectors[connector]: # if the connector exists and is active (i.e. there is a resolution)
+			return connector
 	return None
 
-# load options
-config = loadConfigFile(os.getenv('HOME') + '/.dsl.conf')
-if len(config['internalConnector']) != 1:
-	raise Exception("You must specify exactly one internal connector")
-if len(config['externalConnectors']) < 1:
-	raise Exception("You must specify at least one external connector")
-# use options
-internalConnector = config['internalConnector'][0]
-externalConnectors = config['externalConnectors']
+# load connectors and options
 connectors = getXrandrInformation()
-usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
+config = loadConfigFile(os.getenv('HOME') + '/.dsl.conf')
+# find internal connector
+if 'internalConnector' in config:
+	if len(config['internalConnector']) != 1:
+		raise Exception("You must specify exactly one internal connector")
+	internalConnector = config['internalConnector'][0]
+	if not internalConnector in connectors:
+		raise Exception("Connector %s does not exist, there is an error in your config file" % internalConnector)
+else:
+	# auto-config
+	internalConnector = findAvailableConnector(commonInternalConnectorNames)
+	if internalConnector is None:
+		raise Exception("Could not automatically find internal connector, please use ~/.dsl.conf to specify it manually")
+# all the rest is external then, obviously - unless the user wants to do that manually
+if 'externalConnectors' in config:
+	externalConnectors = config['externalConnectors']
+	for connector in externalConnectors:
+		if not connector in connectors:
+			raise Exception("Connector %s does not exist, there is an error in your config file" % internalConnector)
+else:
+	externalConnectors = connectors.keys()
+	externalConnectors.remove(internalConnector)
+if not externalConnectors:
+	raise Exception("No external connector found - either your config is wrong, or your machine has only one connector")
 
 # default: screen off
 args = {} # maps connector names to xrand arguments
@@ -88,6 +109,7 @@ for c in externalConnectors+[internalConnector]:
 	args[c] = ["--off"]
 
 # Check what to do
+usedExternalConnector = findAvailableConnector(externalConnectors) # *the* external connector which is actually used
 if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
 	internalResolutions = connectors[internalConnector]
 	externalResolutions = connectors[usedExternalConnector]
