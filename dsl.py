@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# DSL - easy Display Setup for Laptops
+
 import sys, re, subprocess
 from PyQt4 import QtGui
 from selector_window import PositionSelection
