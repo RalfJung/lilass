@@ -1,10 +1,32 @@
 #!/usr/bin/python
 # DSL - easy Display Setup for Laptops
 
-import sys, re, subprocess
+import os, sys, re, subprocess
 from PyQt4 import QtGui
 from selector_window import PositionSelection
 app = QtGui.QApplication(sys.argv)
+
+# Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
+def loadConfigFile(file):
+	import shlex
+	# read config file
+	linenr = 0
+	with open(file) as file:
+		result = {}
+		for line in file:
+			linenr += 1
+			line = line.strip()
+			if not len(line) or line.startswith("#"): continue # skip empty and comment lines
+			try:
+				# parse line
+				pos = line.index("=") # will raise exception when substring is not found
+				curKey = line[:pos].strip()
+				value = line[pos+1:]
+				result[curKey] = shlex.split(value)
+			except Exception:
+				raise Exception("Invalid config, line %d: Error parsing line (quoting issue?)" % linenr)
+	# add some convencience get functions
+	return result
 
 def getXrandrInformation():
 	p = subprocess.Popen(["xrandr", "-q"], stdout=subprocess.PIPE)
@@ -43,48 +65,57 @@ def res2user(res):
 		strRatio = '16:%d' % ratio
 	return '%dx%d (%s)' %(w, h, strRatio)
 
-# Check screen setup
-internalName = "LVDS1"
-externalNames = ["HDMI1", "DP1", "VGA1"]
-connectors = getXrandrInformation()
-internalResolutions = connectors[internalName] # there must be a screen assoicated to the internal connector
-externalName = None # *the* external connector which is actually used
-externalResolutions = None # resultions of the external connector
-args = {} # maps connector names to xrand arguments
+def findAvailableConnector(tryConnectors, availableConnectors):
+	for connector in tryConnectors:
+		if connector in availableConnectors: return connector
+	return None
 
-# look for enabled external screen, disable all the others
-for name in externalNames:
-	if externalResolutions is None and name in connectors:
-		externalName = name
-		externalResolutions = connectors[name]
-	else:
-		args[name] = ["--off"]
+# load options
+config = loadConfigFile(os.getenv('HOME') + '/.dsl.conf')
+if len(config['internalConnector']) != 1:
+	raise Exception("You must specify exactly one internal connector")
+if len(config['externalConnectors']) < 1:
+	raise Exception("You must specify at least one external connector")
+# use options
+internalConnector = config['internalConnector'][0]
+externalConnectors = config['externalConnectors']
+connectors = getXrandrInformation()
+usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
+
+# default: screen off
+args = {} # maps connector names to xrand arguments
+for c in externalConnectors+[internalConnector]:
+	args[c] = ["--off"]
 
 # Check what to do
-if externalName is not None: # we need to ask what to do
-	extPosition = PositionSelection(externalName, map(res2user, internalResolutions), map(res2user, externalResolutions))
+if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
+	internalResolutions = connectors[internalConnector]
+	externalResolutions = connectors[usedExternalConnector]
+	extPosition = PositionSelection(usedExternalConnector, map(res2user, internalResolutions), map(res2user, externalResolutions))
 	extPosition.exec_()
 	if not extPosition.result(): sys.exit(1) # the user canceled
 	extResolution = res2xrandr(externalResolutions[extPosition.extResolutions.currentIndex()])
 	intResolution = res2xrandr(internalResolutions[extPosition.intResolutions.currentIndex()])
 	# build command-line
-	args[externalName] = ["--mode", extResolution] # we definitely want an external screen
+	args[usedExternalConnector] = ["--mode", extResolution] # set external screen to desired resolution
 	if extPosition.extOnly.isChecked():
-		args[internalName] = ["--off"]
-		args[externalName] += ["--primary"]
+		args[usedExternalConnector] += ["--primary"]
 	else:
 		# there are two screens
-		args[internalName] = ["--mode", intResolution]
+		args[internalConnector] = ["--mode", intResolution] # set internal screen to desired resolution
+		# set position
 		if extPosition.posLeft.isChecked():
-			args[externalName] += ["--left-of", internalName]
+			args[usedExternalConnector] += ["--left-of", internalConnector]
 		else:
-			args[externalName] += ["--right-of", internalName]
+			args[usedExternalConnector] += ["--right-of", internalConnector]
+		# set primary screen
 		if extPosition.primExt.isChecked():
-			args[externalName] += ["--primary"]
+			args[usedExternalConnector] += ["--primary"]
 		else:
-			args[internalName] += ["--primary"]
+			args[internalConnector] += ["--primary"]
 else:
-	args[internalName] = ["--mode", res2xrandr(internalResolutions[0]), "--primary"]
+	# use first resolution
+	args[internalConnector] = ["--mode", res2xrandr(connectors[internalConnector][0]), "--primary"]
 # and do it
 call = ["xrandr"]
 for name in args:
