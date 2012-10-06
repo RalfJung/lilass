@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # DSL - easy Display Setup for Laptops
 # Copyright (C) 2012 Ralf Jung <post@ralfj.de>
 #
