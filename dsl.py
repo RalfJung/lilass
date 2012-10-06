@@ -26,8 +26,7 @@ def loadConfigFile(file):
 				# parse line
 				pos = line.index("=") # will raise exception when substring is not found
 				curKey = line[:pos].strip()
-				value = line[pos+1:]
-				result[curKey] = shlex.split(value)
+				result[curKey] = shlex.split(line[pos+1:]) # shlex.split also strips
 			except Exception:
 				raise Exception("Invalid config, line %d: Error parsing line (quoting issue?)" % linenr)
 	# add some convencience get functions
