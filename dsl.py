@@ -121,7 +121,9 @@ def main():
 		externalConnectors = config['externalConnectors']
 		for connector in externalConnectors:
 			if not connector in connectors:
-				raise Exception("Connector %s does not exist, there is an error in your config file." % internalConnector)
+				raise Exception("Connector %s does not exist, there is an error in your config file." % connector)
+			if connector == internalConnector:
+				raise Exception("%s is both internal and external, that doesn't make sense." % connector)
 	else:
 		externalConnectors = connectors.keys()
 		externalConnectors.remove(internalConnector)
