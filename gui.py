@@ -22,4 +22,3 @@ app = QtGui.QApplication(sys.argv)
 
 def error(message):
 	QtGui.QMessageBox.critical(None, 'Fatal error', message)
-	raise Exception(message)
