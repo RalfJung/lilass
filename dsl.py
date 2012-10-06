@@ -22,7 +22,7 @@ from selector_window import PositionSelection
 app = QtGui.QApplication(sys.argv)
 
 # for auto-config: common names of internal connectors
-commonInternalConnectorNames = ['LVDS', 'LVDS1', 'LVDS-0']
+commonInternalConnectorNames = ['LVDS', 'LVDS0', 'LVDS1', 'LVDS-0', 'LVDS-1']
 
 # Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
 def loadConfigFile(file):
