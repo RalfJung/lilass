@@ -70,7 +70,9 @@ def getXrandrInformation():
 			connectors[connector].append((int(m.groups()[0]), int(m.groups()[1])))
 			continue
 		# unknown line
-		raise Exception("Unknown line in xrandr output:\n"+line)
+		# not fatal as my xrandr shows strange stuff when a display is enabled, but not connected
+		#raise Exception("Unknown line in xrandr output:\n"+line)
+		print "Warning: Unknown xrandr line %s" % line
 	# be sure to always proprly finish up with the xrandr
 	p.communicate()
 	# if everything succeededso far, check return code
