@@ -49,24 +49,33 @@ def loadConfigFile(file):
 def getXrandrInformation():
 	p = subprocess.Popen(["xrandr", "-q"], stdout=subprocess.PIPE)
 	connectors = {} # map of connector names to a list of resolutions
-	connector = None # current connector
-	for line in p.stdout:
-		# ignore screens
-		if line.startswith("Screen"):
-			continue
-		# new connector?
-		m = re.search(r'^([\w\-]+) (dis)?connected ', line)
-		if m is not None:
-			connector = m.groups()[0]
-			assert connector not in connectors
-			connectors[connector] = []
-			continue
-		# new resolution?
-		m = re.search(r'^   ([\d]+)x([\d]+) +', line)
-		if m is not None:
-			assert connector is not None
-			connectors[connector].append((int(m.groups()[0]), int(m.groups()[1])))
-	p.communicate()
+	try:
+		connector = None # current connector
+		for line in p.stdout:
+			# screen?
+			m = re.search(r'^Screen [0-9]+: ', line)
+			if m is not None: # ignore this line
+				connector = None
+				continue
+			# new connector?
+			m = re.search(r'^([\w\-]+) (dis)?connected ', line)
+			if m is not None:
+				connector = m.groups()[0]
+				assert connector not in connectors
+				connectors[connector] = []
+				continue
+			# new resolution?
+			m = re.search(r'^   ([\d]+)x([\d]+) +', line)
+			if m is not None:
+				assert connector is not None
+				connectors[connector].append((int(m.groups()[0]), int(m.groups()[1])))
+				continue
+			# unknown line
+			raise Exception("Unknown line in xrandr output:\n"+line)
+	finally:
+		# be sure to always proprly finish up with the xrandr
+		p.communicate()
+	# if everything succeededso far, check return code
 	if p.returncode != 0: raise Exception("Querying xrandr for data failed.")
 	return connectors
 
