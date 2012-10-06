@@ -86,9 +86,9 @@ def res2user(res):
 		strRatio = '16:%d' % ratio
 	return '%dx%d (%s)' %(w, h, strRatio)
 
-def findAvailableConnector(tryConnectors):
+def findAvailableConnector(tryConnectors, allConnectors):
 	for connector in tryConnectors:
-		if connector in connectors and connectors[connector]: # if the connector exists and is active (i.e. there is a resolution)
+		if connector in allConnectors and allConnectors[connector]: # if the connector exists and is active (i.e. there is a resolution)
 			return connector
 	return None
 
@@ -106,7 +106,7 @@ def main():
 			raise Exception("Connector %s does not exist, there is an error in your config file." % internalConnector)
 	else:
 		# auto-config
-		internalConnector = findAvailableConnector(commonInternalConnectorNames)
+		internalConnector = findAvailableConnector(commonInternalConnectorNames, connectors)
 		if internalConnector is None:
 			raise Exception("Could not automatically find internal connector, please use ~/.dsl.conf to specify it manually.")
 	# all the rest is external then, obviously - unless the user wants to do that manually
@@ -127,7 +127,7 @@ def main():
 		args[c] = ["--off"]
 
 	# Check what to do
-	usedExternalConnector = findAvailableConnector(externalConnectors) # *the* external connector which is actually used
+	usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
 	if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
 		internalResolutions = connectors[internalConnector]
 		externalResolutions = connectors[usedExternalConnector]
