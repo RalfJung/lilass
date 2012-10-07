@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program (gpl.txt); if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-from dsl import RelativeScreenPosition
+from dsl import RelativeScreenPosition, ScreenSetup, res2user
 from PyQt4 import QtCore, QtGui
 
 def makeLayout(layout, members):
@@ -26,10 +26,10 @@ def makeLayout(layout, members):
 	return layout
 
 class PositionSelection(QtGui.QDialog):
-	def __init__(self, externalName, internalResolutions, externalResolutions):
+	def __init__(self, internalResolutions, externalResolutions):
 		# set up main window
 		super(PositionSelection, self).__init__()
-		self.setWindowTitle('External screen setup (connector: %s)' % externalName)
+		self.setWindowTitle('DSL - easy Display Setup for Laptops')
 		
 		# position selection
 		posBox = QtGui.QGroupBox('Position of external screen', self)
@@ -51,19 +51,21 @@ class PositionSelection(QtGui.QDialog):
 		# resolution selection
 		resBox = QtGui.QGroupBox('Screen resolutions', self)
 		extResLabel = QtGui.QLabel('Resolution of external screen:', resBox)
-		self.extResolutions = QtGui.QComboBox(resBox)
+		self.extResolutions = externalResolutions
+		self.extResolutionsBox = QtGui.QComboBox(resBox)
 		for res in externalResolutions:
-			self.extResolutions.addItem(res)
-		self.extResolutions.setCurrentIndex(0) # select first resolution
-		extRow = makeLayout(QtGui.QHBoxLayout(), [extResLabel, self.extResolutions])
+			self.extResolutionsBox.addItem(res2user(res))
+		self.extResolutionsBox.setCurrentIndex(0) # select first resolution
+		extRow = makeLayout(QtGui.QHBoxLayout(), [extResLabel, self.extResolutionsBox])
 		intResLabel = QtGui.QLabel('Resolution of internal screen:', resBox)
 		self.extOnly.toggled.connect(intResLabel.setDisabled) # disable the label if there's just one screen in use
-		self.intResolutions = QtGui.QComboBox(resBox)
+		self.intResolutions = internalResolutions
+		self.intResolutionsBox = QtGui.QComboBox(resBox)
 		for res in internalResolutions:
-			self.intResolutions.addItem(res)
-		self.intResolutions.setCurrentIndex(0) # select first resolution
-		self.extOnly.toggled.connect(self.intResolutions.setDisabled) # disable the box if there's just one screen in use
-		intRow = makeLayout(QtGui.QHBoxLayout(), [intResLabel, self.intResolutions])
+			self.intResolutionsBox.addItem(res2user(res))
+		self.intResolutionsBox.setCurrentIndex(0) # select first resolution
+		self.extOnly.toggled.connect(self.intResolutionsBox.setDisabled) # disable the box if there's just one screen in use
+		intRow = makeLayout(QtGui.QHBoxLayout(), [intResLabel, self.intResolutionsBox])
 		resBox.setLayout(makeLayout(QtGui.QVBoxLayout(), [extRow, intRow]))
 		
 		# last row: buttons
@@ -76,7 +78,11 @@ class PositionSelection(QtGui.QDialog):
 	
 	def run(self):
 		self.exec_()
-		return True if self.result() else False
+		if not self.result(): return None
+		return ScreenSetup(self.getRelativeScreenPosition(),
+			self.intResolutions[self.intResolutionsBox.currentIndex()],
+			self.extResolutions[self.extResolutionsBox.currentIndex()],
+			self.primExt.isChecked())
 	
 	def getRelativeScreenPosition(self):
 		if self.posLeft.isChecked():
@@ -85,12 +91,3 @@ class PositionSelection(QtGui.QDialog):
 			return RelativeScreenPosition.RIGHT
 		else:
 			return RelativeScreenPosition.EXTERNAL_ONLY
-	
-	def getIntResolutionIndex(self):
-		return self.intResolutions.currentIndex()
-	
-	def getExtResolutionIndex(self):
-		return self.extResolutions.currentIndex()
-	
-	def externalIsPrimary(self):
-		return self.primExt.isChecked()

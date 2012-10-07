@@ -25,12 +25,6 @@ def error(message):
 	'''Displays a fatal error to the user'''
 	QtGui.QMessageBox.critical(None, 'Fatal error', message)
 
-def getDialogue(externalName, internalResolutions, externalResolutions):
-	'''Returns a class implementing the following functions:
-	 * run() opens the dialogue. returns True if it was accepted, False otherwise
-	 * getRelativeScreenPosition() returns one of the RelativeScreenPosition values (see dsl.py)
-	 * getIntResolutionIndex() returns the index of an element in the internalResolutions list
-	 * getExtResolutionIndex() returns the index of an element in the externalResolutions list
-	 * externalIsPrimary() returns whether the external screen is the primary one (True) or the internal one (False)
-	'''
-	return PositionSelection(externalName, internalResolutions, externalResolutions)
+def getDialogue(internalResolutions, externalResolutions):
+	'''Returns a class implementing a function run() which returns a ScreenSetup instance, or None if the user canceled'''
+	return PositionSelection(internalResolutions, externalResolutions)

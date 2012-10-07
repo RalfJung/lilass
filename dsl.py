@@ -16,7 +16,7 @@
 # along with this program (gpl.txt); if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-import os, re, subprocess
+import sys, os, re, subprocess
 import gui
 
 # for auto-config: common names of internal connectors
@@ -27,6 +27,33 @@ class RelativeScreenPosition:
 	LEFT          = 0
 	RIGHT         = 1
 	EXTERNAL_ONLY = 2
+
+# storing what's necessary for screen setup
+class ScreenSetup:
+	def __init__(self, relPosition, intResolution, extResolution, extIsPrimary = False):
+		'''relPosition must be one of the RelativeScreenPosition members, the resolutions must be (width, height) pairs'''
+		self.relPosition = relPosition
+		self.intResolution = intResolution # value doesn't matter if the internal screen is disabled
+		self.extResolution = extResolution
+		self.extIsPrimary = extIsPrimary or self.relPosition == RelativeScreenPosition.EXTERNAL_ONLY # external is always primary if it is the only one
+	
+	def getInternalArgs(self):
+		if self.relPosition == RelativeScreenPosition.EXTERNAL_ONLY:
+			return ["--off"]
+		args = ["--mode", res2xrandr(self.intResolution)] # set internal screen to desired resolution
+		if not self.extIsPrimary:
+			args.append('--primary')
+		return args
+	
+	def getExternalArgs(self, intName):
+		args = ["--mode", res2xrandr(self.extResolution)]
+		if self.extIsPrimary:
+			args.append('--primary')
+		if self.relPosition == RelativeScreenPosition.LEFT:
+			args += ['--left-of', intName]
+		elif self.relPosition == RelativeScreenPosition.RIGHT:
+			args += ['--right-of', intName]
+		return args
 
 # Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
 def loadConfigFile(file):
@@ -47,10 +74,12 @@ def loadConfigFile(file):
 				curKey = line[:pos].strip()
 				result[curKey] = shlex.split(line[pos+1:]) # shlex.split also strips
 			except Exception:
-				raise Exception("Invalid config, line %d: Error parsing line (quoting issue?)." % linenr)
+				raise Exception("Invalid config, line %d: Error parsing line (may be a quoting issue)." % linenr)
 	# add some convencience get functions
 	return result
 
+# Run xrandr and return a dict of output names mapped to lists of available resolutions, each being a (width, height) pair.
+# An empty list indicates that the connector is disabled.
 def getXrandrInformation():
 	p = subprocess.Popen(["xrandr", "-q"], stdout=subprocess.PIPE)
 	connectors = {} # map of connector names to a list of resolutions
@@ -84,10 +113,12 @@ def getXrandrInformation():
 	if p.returncode != 0: raise Exception("Querying xrandr for data failed.")
 	return connectors
 
+# convert a (width, height) pair into a string accepted by xrandr as argument for --mode
 def res2xrandr(res):
 	(w, h) = res
 	return str(w)+'x'+str(h)
 
+# convert a (width, height) pair into a string to be displayed to the user
 def res2user(res):
 	(w, h) = res
 	# get ratio
@@ -100,89 +131,78 @@ def res2user(res):
 		strRatio = '16:%d' % ratio
 	return '%dx%d (%s)' %(w, h, strRatio)
 
+# return the first available connector from those listed in tryConnectors, skipping disabled connectors
 def findAvailableConnector(tryConnectors, allConnectors):
 	for connector in tryConnectors:
 		if connector in allConnectors and allConnectors[connector]: # if the connector exists and is active (i.e. there is a resolution)
 			return connector
 	return None
 
-# the main function
-def main():
-	# load connectors and options
-	connectors = getXrandrInformation()
+# Return a (internalConnector, externalConnectors) pair: The name of the internal connector, and a list of external connectors.
+# Use the config file at ~/.dsl.conf and fall back to auto-detection
+def classifyConnectors(allConnectors):
 	config = loadConfigFile(os.getenv('HOME') + '/.dsl.conf')
 	# find internal connector
 	if 'internalConnector' in config:
 		if len(config['internalConnector']) != 1:
 			raise Exception("You must specify exactly one internal connector.")
 		internalConnector = config['internalConnector'][0]
-		if not internalConnector in connectors:
+		if not internalConnector in allConnectors:
 			raise Exception("Connector %s does not exist, there is an error in your config file." % internalConnector)
 	else:
 		# auto-config
-		internalConnector = findAvailableConnector(commonInternalConnectorNames, connectors)
+		internalConnector = findAvailableConnector(commonInternalConnectorNames, allConnectors)
 		if internalConnector is None:
 			raise Exception("Could not automatically find internal connector, please use ~/.dsl.conf to specify it manually.")
 	# all the rest is external then, obviously - unless the user wants to do that manually
 	if 'externalConnectors' in config:
 		externalConnectors = config['externalConnectors']
 		for connector in externalConnectors:
-			if not connector in connectors:
+			if not connector in allConnectors:
 				raise Exception("Connector %s does not exist, there is an error in your config file." % connector)
 			if connector == internalConnector:
 				raise Exception("%s is both internal and external, that doesn't make sense." % connector)
 	else:
-		externalConnectors = connectors.keys()
+		externalConnectors = allConnectors.keys()
 		externalConnectors.remove(internalConnector)
 	if not externalConnectors:
 		raise Exception("No external connector found - either your config is wrong, or your machine has only one connector.")
-
-	# default: screen off
-	args = {} # maps connector names to xrand arguments
-	for c in externalConnectors+[internalConnector]:
-		args[c] = ["--off"]
-
-	# Check what to do
-	usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
-	if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
-		internalResolutions = connectors[internalConnector]
-		externalResolutions = connectors[usedExternalConnector]
-		dialogue = gui.getDialogue(usedExternalConnector, map(res2user, internalResolutions), map(res2user, externalResolutions))
-		if not dialogue.run(): sys.exit(1) # the user canceled
-		extResolution = res2xrandr(externalResolutions[dialogue.getExtResolutionIndex()])
-		intResolution = res2xrandr(internalResolutions[dialogue.getIntResolutionIndex()])
-		relPosition = dialogue.getRelativeScreenPosition()
-		# build command-line
-		args[usedExternalConnector] = ["--mode", extResolution] # set external screen to desired resolution
-		if relPosition == RelativeScreenPosition.EXTERNAL_ONLY:
-			args[usedExternalConnector] += ["--primary"]
-		else:
-			# there are two screens
-			args[internalConnector] = ["--mode", intResolution] # set internal screen to desired resolution
-			# set position
-			if relPosition == RelativeScreenPosition.LEFT:
-				args[usedExternalConnector] += ["--left-of", internalConnector]
-			else:
-				args[usedExternalConnector] += ["--right-of", internalConnector]
-			# set primary screen
-			if dialogue.externalIsPrimary():
-				args[usedExternalConnector] += ["--primary"]
-			else:
-				args[internalConnector] += ["--primary"]
-	else:
-		# use first resolution
-		args[internalConnector] = ["--mode", res2xrandr(connectors[internalConnector][0]), "--primary"]
-	# and do it
-	call = ["xrandr"]
-	for name in args:
-		call += ["--output", name] + args[name]
-	print "Call that will be made:",call
-	subprocess.check_call(call)
+	# done!
+	return (internalConnector, externalConnectors)
 
 # if we run top-level
 if __name__ == "__main__":
 	try:
-		main()
+		# load connectors and classify them
+		connectors = getXrandrInformation()
+		(internalConnector, externalConnectors) = classifyConnectors(connectors)
+		
+		# default: screen off
+		connectorArgs = {} # maps connector names to xrand arguments
+		for c in externalConnectors+[internalConnector]:
+			connectorArgs[c] = ["--off"]
+		
+		# check whether we got an external screen or not
+		# Check what to do
+		usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
+		if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
+			# get setup
+			dialogue = gui.getDialogue(connectors[internalConnector], connectors[usedExternalConnector])
+			setup = dialogue.run()
+			if setup is None: sys.exit(1) # the user canceled
+			# apply it
+			connectorArgs[internalConnector] = setup.getInternalArgs()
+			connectorArgs[usedExternalConnector] = setup.getExternalArgs(internalConnector)
+		else:
+			# use first resolution of internal connector
+			connectorArgs[internalConnector] = ["--mode", res2xrandr(connectors[internalConnector][0]), "--primary"]
+		
+		# and do it
+		call = ["xrandr"]
+		for name in connectorArgs:
+			call += ["--output", name] + connectorArgs[name]
+		print "Call that will be made:",call
+		subprocess.check_call(call)
 	except Exception as e:
 		gui.error(str(e))
 		raise
