@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program (gpl.txt); if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+from dsl import RelativeScreenPosition
 from PyQt4 import QtCore, QtGui
 
 def makeLayout(layout, members):
@@ -25,10 +26,6 @@ def makeLayout(layout, members):
 	return layout
 
 class PositionSelection(QtGui.QDialog):
-	LEFT = 10
-	RIGHT = 20
-	EXTERNAL_ONLY = 30
-	
 	def __init__(self, externalName, internalResolutions, externalResolutions):
 		# set up main window
 		super(PositionSelection, self).__init__()
@@ -76,3 +73,24 @@ class PositionSelection(QtGui.QDialog):
 		
 		# add them all to the window
 		self.setLayout(makeLayout(QtGui.QVBoxLayout(), [posBox, primBox, resBox, buttons]))
+	
+	def run(self):
+		self.exec_()
+		return True if self.result() else False
+	
+	def getRelativeScreenPosition(self):
+		if self.posLeft.isChecked():
+			return RelativeScreenPosition.LEFT
+		elif self.posRight.isChecked():
+			return RelativeScreenPosition.RIGHT
+		else:
+			return RelativeScreenPosition.EXTERNAL_ONLY
+	
+	def getIntResolutionIndex(self):
+		return self.intResolutions.currentIndex()
+	
+	def getExtResolutionIndex(self):
+		return self.extResolutions.currentIndex()
+	
+	def externalIsPrimary(self):
+		return self.primExt.isChecked()

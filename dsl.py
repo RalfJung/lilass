@@ -17,11 +17,16 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 import os, re, subprocess
-from selector_window import PositionSelection
 import gui
 
 # for auto-config: common names of internal connectors
 commonInternalConnectorNames = ['LVDS', 'LVDS0', 'LVDS1', 'LVDS-0', 'LVDS-1']
+
+# this is as close as one can get to an enum in Python
+class RelativeScreenPosition:
+	LEFT          = 0
+	RIGHT         = 1
+	EXTERNAL_ONLY = 2
 
 # Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
 def loadConfigFile(file):
@@ -142,25 +147,25 @@ def main():
 	if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
 		internalResolutions = connectors[internalConnector]
 		externalResolutions = connectors[usedExternalConnector]
-		extPosition = PositionSelection(usedExternalConnector, map(res2user, internalResolutions), map(res2user, externalResolutions))
-		extPosition.exec_()
-		if not extPosition.result(): sys.exit(1) # the user canceled
-		extResolution = res2xrandr(externalResolutions[extPosition.extResolutions.currentIndex()])
-		intResolution = res2xrandr(internalResolutions[extPosition.intResolutions.currentIndex()])
+		dialogue = gui.getDialogue(usedExternalConnector, map(res2user, internalResolutions), map(res2user, externalResolutions))
+		if not dialogue.run(): sys.exit(1) # the user canceled
+		extResolution = res2xrandr(externalResolutions[dialogue.getExtResolutionIndex()])
+		intResolution = res2xrandr(internalResolutions[dialogue.getIntResolutionIndex()])
+		relPosition = dialogue.getRelativeScreenPosition()
 		# build command-line
 		args[usedExternalConnector] = ["--mode", extResolution] # set external screen to desired resolution
-		if extPosition.extOnly.isChecked():
+		if relPosition == RelativeScreenPosition.EXTERNAL_ONLY:
 			args[usedExternalConnector] += ["--primary"]
 		else:
 			# there are two screens
 			args[internalConnector] = ["--mode", intResolution] # set internal screen to desired resolution
 			# set position
-			if extPosition.posLeft.isChecked():
+			if relPosition == RelativeScreenPosition.LEFT:
 				args[usedExternalConnector] += ["--left-of", internalConnector]
 			else:
 				args[usedExternalConnector] += ["--right-of", internalConnector]
 			# set primary screen
-			if extPosition.primExt.isChecked():
+			if dialogue.externalIsPrimary():
 				args[usedExternalConnector] += ["--primary"]
 			else:
 				args[internalConnector] += ["--primary"]
