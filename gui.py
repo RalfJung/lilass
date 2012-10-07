@@ -25,6 +25,6 @@ def error(message):
 	'''Displays a fatal error to the user'''
 	QtGui.QMessageBox.critical(None, 'Fatal error', message)
 
-def getDialogue(internalResolutions, externalResolutions):
-	'''Returns a class implementing a function run() which returns a ScreenSetup instance, or None if the user canceled'''
-	return PositionSelection(internalResolutions, externalResolutions)
+def setup(internalResolutions, externalResolutions):
+	'''Returns a ScreenSetup instance, or None if the user canceled'''
+	return PositionSelection(internalResolutions, externalResolutions).run()

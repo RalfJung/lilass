@@ -46,7 +46,7 @@ class ScreenSetup:
 		return args
 	
 	def getExternalArgs(self, intName):
-		args = ["--mode", res2xrandr(self.extResolution)]
+		args = ["--mode", res2xrandr(self.extResolution)] # set external screen to desired resolution
 		if self.extIsPrimary:
 			args.append('--primary')
 		if self.relPosition == RelativeScreenPosition.LEFT:
@@ -187,8 +187,7 @@ if __name__ == "__main__":
 		usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
 		if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
 			# get setup
-			dialogue = gui.getDialogue(connectors[internalConnector], connectors[usedExternalConnector])
-			setup = dialogue.run()
+			setup = gui.setup(connectors[internalConnector], connectors[usedExternalConnector])
 			if setup is None: sys.exit(1) # the user canceled
 			# apply it
 			connectorArgs[internalConnector] = setup.getInternalArgs()
