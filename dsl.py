@@ -16,7 +16,7 @@
 # along with this program (gpl.txt); if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-import sys, os, re, subprocess
+import argparse, sys, os, re, subprocess
 import gui
 
 # for auto-config: common names of internal connectors
@@ -173,6 +173,13 @@ def classifyConnectors(allConnectors):
 # if we run top-level
 if __name__ == "__main__":
 	try:
+		# parse command-line arguments
+		parser = argparse.ArgumentParser(description='easy Display Setup for Laptops')
+		parser.add_argument("-r, --relative-position",
+							dest="rel_position", choices=('left', 'right', 'external-only'),
+							help="Position of external screen relative to internal one")
+		cmdArgs = parser.parse_args()
+		
 		# load connectors and classify them
 		connectors = getXrandrInformation()
 		(internalConnector, externalConnectors) = classifyConnectors(connectors)
@@ -185,9 +192,20 @@ if __name__ == "__main__":
 		# check whether we got an external screen or not
 		# Check what to do
 		usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
-		if usedExternalConnector is not None: # there's an external screen connected, we need to ask what to do
-			# get setup
-			setup = gui.setup(connectors[internalConnector], connectors[usedExternalConnector])
+		if usedExternalConnector is not None:
+			# there's an external screen connected, we need to get a setup
+			if cmdArgs.rel_position is not None:
+				# use command-line arguments (can we do this relPosition stuff more elegant?)
+				if cmdArgs.rel_position == 'left':
+					relPosition = RelativeScreenPosition.LEFT
+				elif cmdArgs.rel_position == 'right':
+					relPosition = RelativeScreenPosition.RIGHT
+				else:
+					relPosition = RelativeScreenPosition.EXTERNAL_ONLY
+				setup = ScreenSetup(relPosition, connectors[internalConnector][0], connectors[usedExternalConnector][0]) # use default resolutions
+			else:
+				# use GUI
+				setup = gui.setup(connectors[internalConnector], connectors[usedExternalConnector])
 			if setup is None: sys.exit(1) # the user canceled
 			# apply it
 			connectorArgs[internalConnector] = setup.getInternalArgs()
