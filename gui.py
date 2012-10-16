@@ -17,9 +17,15 @@
 
 # This file abstracts GUI stuff away, so that the actual dsl.py does not have to deal with it
 import sys
-from PyQt4 import QtGui
-from qt_dialogue import PositionSelection
-app = QtGui.QApplication(sys.argv)
+
+qt_available = True
+try:
+	from PyQt4 import QtGui
+	from qt_dialogue import PositionSelection
+	app = QtGui.QApplication(sys.argv)
+except Exception, e:
+	from zenity_dialogue import run as zenity_run
+	qt_available = False
 
 def error(message):
 	'''Displays a fatal error to the user'''
@@ -27,4 +33,7 @@ def error(message):
 
 def setup(internalResolutions, externalResolutions):
 	'''Returns a ScreenSetup instance, or None if the user canceled'''
-	return PositionSelection(internalResolutions, externalResolutions).run()
+	if qt_available:
+		return PositionSelection(internalResolutions, externalResolutions).run()
+	else:
+		return zenity_run(internalResolutions, externalResolutions)
