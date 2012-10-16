@@ -15,7 +15,7 @@
 # along with this program (gpl.txt); if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-# This file bstracts GUI stuff away, so that the actual dsl.py does not have to deal with it
+# This file abstracts GUI stuff away, so that the actual dsl.py does not have to deal with it
 import sys
 from PyQt4 import QtGui
 from qt_dialogue import PositionSelection
