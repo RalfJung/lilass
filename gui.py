@@ -24,12 +24,16 @@ try:
 	from qt_dialogue import PositionSelection
 	app = QtGui.QApplication(sys.argv)
 except Exception, e:
+	import subprocess
 	from zenity_dialogue import run as zenity_run
 	qt_available = False
 
 def error(message):
 	'''Displays a fatal error to the user'''
-	QtGui.QMessageBox.critical(None, 'Fatal error', message)
+	if qt_available:
+		QtGui.QMessageBox.critical(None, 'Fatal error', message)
+	else:
+		subprocess.Popen(["zenity", "--error", "--text="+message], stdout=subprocess.PIPE)
 
 def setup(internalResolutions, externalResolutions):
 	'''Returns a ScreenSetup instance, or None if the user canceled'''

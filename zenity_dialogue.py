@@ -18,26 +18,23 @@
 import subprocess
 from dsl import RelativeScreenPosition, ScreenSetup, res2user
 
-def userChoose (title, choices, returns):
+def userChoose (title, choices, returns, fallback):
 	assert len(choices) == len(returns)
 	p = subprocess.Popen(["zenity", "--list", "--text="+title, "--column="]+choices, stdout=subprocess.PIPE)
 	switch = dict (zip (choices,returns))
 	for line in p.stdout:
-		return switch.get(line.strip(), None)
+		return switch.get(line.strip(), fallback)
+	return fallback
 
 def run (internalResolutions, externalResolutions):
-	relpos = userChoose ("Position of external screen", ["Left of internal screen", "Right of internal screen", "Use external screen only"], [RelativeScreenPosition.LEFT, RelativeScreenPosition.RIGHT, RelativeScreenPosition.EXTERNAL_ONLY])
+	relpos = userChoose ("Position of external screen", ["Left of internal screen", "Right of internal screen", "Use external screen only"], [RelativeScreenPosition.LEFT, RelativeScreenPosition.RIGHT, RelativeScreenPosition.EXTERNAL_ONLY], None)
 	if relpos == None:
 		return None
 	intres = internalResolutions[0]
 	if relpos != RelativeScreenPosition.EXTERNAL_ONLY:
-		intres = userChoose ("internal display resolution", map(res2user,internalResolutions), internalResolutions)
-	if intres == None:
-		return None
-	extres = userChoose ("external display resolution", map(res2user,externalResolutions), externalResolutions)
-	if extres == None:
-		return None
-	extprim = userChoose ("Which display should be the primary display?", ["internal display", "external display"], [False, True])
+		intres = userChoose ("internal display resolution", map(res2user,internalResolutions), internalResolutions, internalResolutions[0])
+	extres = userChoose ("external display resolution", map(res2user,externalResolutions), externalResolutions, externalResolutions[0])
+	extprim = userChoose ("Which display should be the primary display?", ["internal display", "external display"], [False, True], None)
 	if extprim == None:
 		return None
 	return ScreenSetup(relpos,intres,extres,extprim)
