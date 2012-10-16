@@ -21,9 +21,9 @@ from dsl import RelativeScreenPosition, ScreenSetup, res2user
 def userChoose (title, choices, returns):
 	assert len(choices) == len(returns)
 	p = subprocess.Popen(["zenity", "--list", "--text="+title, "--column="]+choices, stdout=subprocess.PIPE)
-	switch = zip (choices,returns)
+	switch = dict (zip (choices,returns))
 	for line in p.stdout:
-		return switch.get(line, None)
+		return switch.get(line.strip(), None)
 
 def run (internalResolutions, externalResolutions):
 	relpos = userChoose ("Position of external screen", ["Left of internal screen", "Right of internal screen", "Use external screen only"], [RelativeScreenPosition.LEFT, RelativeScreenPosition.RIGHT, RelativeScreenPosition.EXTERNAL_ONLY])
