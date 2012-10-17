@@ -33,7 +33,7 @@ def error(message):
 	if qt_available:
 		QtGui.QMessageBox.critical(None, 'Fatal error', message)
 	else:
-		subprocess.Popen(["zenity", "--error", "--text="+message], stdout=subprocess.PIPE)
+		subprocess.check_call(["zenity", "--error", "--text="+message])
 
 def setup(internalResolutions, externalResolutions):
 	'''Returns a ScreenSetup instance, or None if the user canceled'''
