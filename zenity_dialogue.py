@@ -22,7 +22,7 @@ def userChoose (title, choices, returns, fallback):
 	assert len(choices) == len(returns)
 	p = subprocess.Popen(["zenity", "--list", "--text="+title, "--column="]+choices, stdout=subprocess.PIPE)
 	switch = dict (zip (choices,returns))
-	for line in p.stdout:
+	for line in p.stdout: # FIXME use p.communicate()[0] instead to get entire stdout and ensure the process terminates. also check p.returncode.
 		return switch.get(line.strip(), fallback)
 	return fallback
 

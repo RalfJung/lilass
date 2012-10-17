@@ -18,6 +18,18 @@
 # This file abstracts GUI stuff away, so that the actual dsl.py does not have to deal with it
 import sys
 
+'''
+This module implements two functions:
+
+def error(message):
+	This function displays the error message to the user in some appropriate fassion
+
+def setup(internalResolutions, externalResolutions):
+	Both arguments are lists of (width, height) tuples of resolutions. You can use dsl.res2user to obtain a user-readable representation of a resolution tuple.
+	The user should be asked about his display setup preferences.
+	The function returns None if the user cancelled, and an instance of dsl.ScreenSetup otherwise.
+'''
+
 # frontend detectors
 def qtAvailable():
 	try:
@@ -29,19 +41,18 @@ def qtAvailable():
 def zenityAvailable():
 	return True # FIXME
 
-# actual frontend
+# actual frontends
 if qtAvailable():
 	from PyQt4 import QtGui
 	from qt_dialogue import PositionSelection
 	app = QtGui.QApplication(sys.argv)
 	
 	def error(message):
-		'''Displays a fatal error to the user'''
 		QtGui.QMessageBox.critical(None, 'Fatal error', message)
 	
 	def setup(internalResolutions, externalResolutions):
-		'''Returns a ScreenSetup instance, or None if the user canceled'''
 		return PositionSelection(internalResolutions, externalResolutions).run()
+
 elif zenityAvailable():
 	import subprocess
 	from zenity_dialogue import run as setup # this provides the setup function
@@ -49,5 +60,6 @@ elif zenityAvailable():
 	def error(message):
 		'''Displays a fatal error to the user'''
 		subprocess.check_call(["zenity", "--error", "--text="+message])
+
 else:
 	print >> sys.stderr, 'No GUI frontend available, please make sure PyQt4 or Zenity is installed'
