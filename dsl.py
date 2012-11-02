@@ -78,13 +78,24 @@ def loadConfigFile(file):
 	# add some convencience get functions
 	return result
 
+# helper function: execute a process, return output as iterator, throw exception if there was an error
+# you *must* iterate to the end if you use this!
+def processOutputGen(*args):
+	p = subprocess.Popen(args, stdout=subprocess.PIPE)
+	for line in p.stdout:
+		yield line
+	p.wait() # wait for process to exit (it closed stdout, so it can't block anymore)
+	if p.returncode != 0:
+		raise Exception("Error executing "+str(args))
+def processOutputIt(*args):
+	return list(processOutputGen(*args)) # list() iterates over the generator
+
 # Run xrandr and return a dict of output names mapped to lists of available resolutions, each being a (width, height) pair.
 # An empty list indicates that the connector is disabled.
 def getXrandrInformation():
-	p = subprocess.Popen(["xrandr", "-q"], stdout=subprocess.PIPE)
 	connectors = {} # map of connector names to a list of resolutions
 	connector = None # current connector
-	for line in p.stdout:
+	for line in processOutputGen("xrandr", "-q"):
 		# screen?
 		m = re.search(r'^Screen [0-9]+: ', line)
 		if m is not None: # ignore this line
@@ -107,10 +118,6 @@ def getXrandrInformation():
 		# not fatal as my xrandr shows strange stuff when a display is enabled, but not connected
 		#raise Exception("Unknown line in xrandr output:\n"+line)
 		print "Warning: Unknown xrandr line %s" % line
-	# be sure to always proprly finish up with the xrandr
-	p.communicate()
-	# if everything succeededso far, check return code
-	if p.returncode != 0: raise Exception("Querying xrandr for data failed.")
 	return connectors
 
 # convert a (width, height) pair into a string accepted by xrandr as argument for --mode

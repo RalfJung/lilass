@@ -15,14 +15,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-import subprocess
-from dsl import RelativeScreenPosition, ScreenSetup, res2user
+from dsl import RelativeScreenPosition, ScreenSetup, res2user, processOutputIt
 
 def userChoose (title, choices, returns, fallback):
 	assert len(choices) == len(returns)
-	p = subprocess.Popen(["zenity", "--list", "--text="+title, "--column="]+choices, stdout=subprocess.PIPE)
+	args = ["zenity", "--list", "--text="+title, "--column="]+choices
 	switch = dict (zip (choices,returns))
-	for line in p.stdout: # FIXME use p.communicate()[0] instead to get entire stdout and ensure the process terminates. also check p.returncode.
+	for line in processOutputIt(*args):
 		return switch.get(line.strip(), fallback)
 	return fallback
 

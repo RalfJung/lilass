@@ -39,7 +39,12 @@ def qtAvailable():
 		return False
 
 def zenityAvailable():
-	return True # FIXME
+	try:
+		from dsl import processOutputIt
+		processOutputIt("zenity", "--version")
+		return True
+	except Exception:
+		return False
 
 # actual frontends
 if qtAvailable():
