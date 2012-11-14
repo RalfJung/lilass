@@ -17,7 +17,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 import argparse, sys, os, re, subprocess
-import gui
+from gui import getFrontend
+frontend = getFrontend("cli") # the fallback, until we got a proper frontend. This is guaranteed to be available.
 
 # for auto-config: common names of internal connectors
 commonInternalConnectorNames = ['LVDS', 'LVDS0', 'LVDS1', 'LVDS-0', 'LVDS-1']
@@ -182,10 +183,16 @@ if __name__ == "__main__":
 	try:
 		# parse command-line arguments
 		parser = argparse.ArgumentParser(description='easy Display Setup for Laptops')
+		parser.add_argument("-f, --frontend",
+							dest="frontend",
+							help="The frontend to be used for user interaction")
 		parser.add_argument("-r, --relative-position",
 							dest="rel_position", choices=('left', 'right', 'external-only'),
 							help="Position of external screen relative to internal one")
 		cmdArgs = parser.parse_args()
+		
+		# load frontend
+		frontend = getFrontend(cmdArgs.frontend)
 		
 		# load connectors and classify them
 		connectors = getXrandrInformation()
@@ -212,7 +219,7 @@ if __name__ == "__main__":
 				setup = ScreenSetup(relPosition, connectors[internalConnector][0], connectors[usedExternalConnector][0]) # use default resolutions
 			else:
 				# use GUI
-				setup = gui.setup(connectors[internalConnector], connectors[usedExternalConnector])
+				setup = frontend.setup(connectors[internalConnector], connectors[usedExternalConnector])
 			if setup is None: sys.exit(1) # the user canceled
 			# apply it
 			connectorArgs[internalConnector] = setup.getInternalArgs()
@@ -228,5 +235,5 @@ if __name__ == "__main__":
 		print "Call that will be made:",call
 		subprocess.check_call(call)
 	except Exception as e:
-		gui.error(str(e))
+		frontend.error(str(e))
 		raise
