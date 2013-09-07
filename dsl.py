@@ -57,15 +57,15 @@ class ScreenSetup:
 		return args
 
 # Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
-def loadConfigFile(file):
+def loadConfigFile(filename):
 	import shlex
 	result = {}
-	if not os.path.exists(file):
+	if not os.path.exists(filename):
 		return result # no config file
 	# read config file
 	linenr = 0
-	with open(file) as file:
-		for line in file:
+	with open(filename) as f:
+		for line in f:
 			linenr += 1
 			line = line.strip()
 			if not len(line) or line.startswith("#"): continue # skip empty and comment lines
@@ -82,10 +82,9 @@ def loadConfigFile(file):
 # helper function: execute a process, return output as iterator, throw exception if there was an error
 # you *must* iterate to the end if you use this!
 def processOutputGen(*args):
-	p = subprocess.Popen(args, stdout=subprocess.PIPE)
-	for line in p.stdout:
-		yield line
-	p.wait() # wait for process to exit (it closed stdout, so it can't block anymore)
+	with subprocess.Popen(args, stdout=subprocess.PIPE) as p:
+		for line in p.stdout:
+			yield line.decode("utf-8")
 	if p.returncode != 0:
 		raise Exception("Error executing "+str(args))
 def processOutputIt(*args):
