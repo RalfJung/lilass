@@ -36,7 +36,7 @@ class QtFrontend:
 	def __init__(self):
 		from PyQt4 import QtGui
 		self.app = QtGui.QApplication(sys.argv)
-		print "Qt loaded"
+		print("Qt loaded")
 	
 	def error(self, message):
 		from PyQt4 import QtGui
@@ -78,7 +78,7 @@ class ZenityFrontend:
 # CLI frontend
 class CLIFrontend:
 	def error(self, message):
-		print >> sys.stderr, message
+		print(message, file=sys.stderr)
 	
 	def setup(self, internalResolutions, externalResolutions):
 		raise Exception("Choosing the setup interactively is not supported with the CLI frontend")
@@ -103,7 +103,7 @@ def getFrontend(name = None):
 		# frontend not found or not available
 		raise Exception("Frontend %s not found or not available" % name)
 	# auto-detect
-	for frontend in frontends.values():
+	for frontend in list(frontends.values()):
 		if frontend.isAvailable():
 			return frontend() # call constructor
 	raise Exception("No frontend is available - this should not happen")

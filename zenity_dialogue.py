@@ -20,7 +20,7 @@ from dsl import RelativeScreenPosition, ScreenSetup, res2user, processOutputIt
 def userChoose (title, choices, returns, fallback):
 	assert len(choices) == len(returns)
 	args = ["zenity", "--list", "--text="+title, "--column="]+choices
-	switch = dict (zip (choices,returns))
+	switch = dict (list(zip (choices,returns)))
 	for line in processOutputIt(*args):
 		return switch.get(line.strip(), fallback)
 	return fallback
@@ -31,8 +31,8 @@ def run (internalResolutions, externalResolutions):
 		return None
 	intres = internalResolutions[0]
 	if relpos != RelativeScreenPosition.EXTERNAL_ONLY:
-		intres = userChoose ("internal display resolution", map(res2user,internalResolutions), internalResolutions, internalResolutions[0])
-	extres = userChoose ("external display resolution", map(res2user,externalResolutions), externalResolutions, externalResolutions[0])
+		intres = userChoose ("internal display resolution", list(map(res2user,internalResolutions)), internalResolutions, internalResolutions[0])
+	extres = userChoose ("external display resolution", list(map(res2user,externalResolutions)), externalResolutions, externalResolutions[0])
 	extprim = userChoose ("Which display should be the primary display?", ["internal display", "external display"], [False, True], None)
 	if extprim == None:
 		return None

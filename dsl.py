@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # DSL - easy Display Setup for Laptops
 # Copyright (C) 2012 Ralf Jung <post@ralfj.de>
 #
@@ -118,7 +118,7 @@ def getXrandrInformation():
 		# unknown line
 		# not fatal as my xrandr shows strange stuff when a display is enabled, but not connected
 		#raise Exception("Unknown line in xrandr output:\n"+line)
-		print "Warning: Unknown xrandr line %s" % line
+		print("Warning: Unknown xrandr line %s" % line)
 	return connectors
 
 # convert a (width, height) pair into a string accepted by xrandr as argument for --mode
@@ -171,7 +171,7 @@ def classifyConnectors(allConnectors):
 			if connector == internalConnector:
 				raise Exception("%s is both internal and external, that doesn't make sense." % connector)
 	else:
-		externalConnectors = allConnectors.keys()
+		externalConnectors = list(allConnectors.keys())
 		externalConnectors.remove(internalConnector)
 	if not externalConnectors:
 		raise Exception("No external connector found - either your config is wrong, or your machine has only one connector.")
@@ -232,7 +232,7 @@ if __name__ == "__main__":
 		call = ["xrandr"]
 		for name in connectorArgs:
 			call += ["--output", name] + connectorArgs[name]
-		print "Call that will be made:",call
+		print("Call that will be made:",call)
 		subprocess.check_call(call)
 	except Exception as e:
 		frontend.error(str(e))
