@@ -103,7 +103,7 @@ def getFrontend(name = None):
 		# frontend not found or not available
 		raise Exception("Frontend %s not found or not available" % name)
 	# auto-detect
-	for frontend in list(frontends.values()):
+	for frontend in frontends.values():
 		if frontend.isAvailable():
 			return frontend() # call constructor
 	raise Exception("No frontend is available - this should not happen")
