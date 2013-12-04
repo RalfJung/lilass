@@ -188,6 +188,9 @@ if __name__ == "__main__":
 		parser.add_argument("-r, --relative-position",
 							dest="rel_position", choices=('left', 'right', 'external-only'),
 							help="Position of external screen relative to internal one")
+		parser.add_argument("-i,--internal-only",
+							dest="internal_only", action='store_true',
+							help="Enable internal screen, disable all the others (as if no external screen was connected")
 		cmdArgs = parser.parse_args()
 		
 		# load frontend
@@ -205,7 +208,7 @@ if __name__ == "__main__":
 		# check whether we got an external screen or not
 		# Check what to do
 		usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
-		if usedExternalConnector is not None:
+		if not cmdArgs.internal_only and usedExternalConnector is not None:
 			# there's an external screen connected, we need to get a setup
 			if cmdArgs.rel_position is not None:
 				# use command-line arguments (can we do this relPosition stuff more elegant?)
