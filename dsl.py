@@ -236,6 +236,12 @@ if __name__ == "__main__":
 			call += ["--output", name] + connectorArgs[name]
 		print("Call that will be made:",call)
 		subprocess.check_call(call)
+		
+		# make sure the internal screen is really, *really* turned on if requested
+		if cmdArgs.internal_only:
+			backlight = float(subprocess.check_output(["xbacklight", "-get"]).strip())
+			if backlight == 0: # it's completely turned off, we better enable it
+				subprocess.check_call(["xbacklight", "-set", "100"])
 	except Exception as e:
 		frontend.error(str(e))
 		raise
