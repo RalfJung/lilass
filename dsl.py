@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # DSL - easy Display Setup for Laptops
-# Copyright (C) 2012 Ralf Jung <post@ralfj.de>
+# Copyright (C) 2012-2014 Ralf Jung <post@ralfj.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
