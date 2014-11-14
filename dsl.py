@@ -208,7 +208,8 @@ if __name__ == "__main__":
 		# check whether we got an external screen or not
 		# Check what to do
 		usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
-		if not cmdArgs.internal_only and usedExternalConnector is not None:
+		hasExternal = not cmdArgs.internal_only and usedExternalConnector is not None
+		if hasExternal:
 			# there's an external screen connected, we need to get a setup
 			if cmdArgs.rel_position is not None:
 				# use command-line arguments (can we do this relPosition stuff more elegant?)
@@ -237,8 +238,8 @@ if __name__ == "__main__":
 		print("Call that will be made:",call)
 		subprocess.check_call(call)
 		
-		# make sure the internal screen is really, *really* turned on if requested
-		if cmdArgs.internal_only:
+		# make sure the internal screen is really, *really* turned on if there is no external screen
+		if not hasExternal:
 			backlight = float(subprocess.check_output(["xbacklight", "-get"]).strip())
 			if backlight == 0: # it's completely turned off, we better enable it
 				subprocess.check_call(["xbacklight", "-set", "100"])
