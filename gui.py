@@ -42,9 +42,9 @@ class QtFrontend:
         from PyQt4 import QtGui
         QtGui.QMessageBox.critical(None, 'Fatal error', message)
     
-    def setup(self, internalResolutions, externalResolutions):
+    def setup(self, internalResolutions, externalResolutions, commonRes):
         from qt_dialogue import PositionSelection
-        return PositionSelection(internalResolutions, externalResolutions).run()
+        return PositionSelection(internalResolutions, externalResolutions, commonRes).run()
     
     @staticmethod
     def isAvailable():
@@ -61,7 +61,7 @@ class ZenityFrontend:
         '''Displays a fatal error to the user'''
         subprocess.check_call(["zenity", "--error", "--text="+message])
     
-    def setup(self, internalResolutions, externalResolutions):
+    def setup(self, internalResolutions, externalResolutions, commonRes):
         from zenity_dialogue import run
         run(internalResolutions, externalResolutions)
     
@@ -80,7 +80,7 @@ class CLIFrontend:
     def error(self, message):
         print(message, file=sys.stderr)
     
-    def setup(self, internalResolutions, externalResolutions):
+    def setup(self, internalResolutions, externalResolutions, commonRes):
         raise Exception("Choosing the setup interactively is not supported with the CLI frontend")
     
     @staticmethod

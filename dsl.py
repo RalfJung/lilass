@@ -28,6 +28,14 @@ class RelativeScreenPosition:
     LEFT          = 0
     RIGHT         = 1
     EXTERNAL_ONLY = 2
+    MIRROR        = 3
+    
+    __names__ = {
+        'left': LEFT,
+        'right': RIGHT,
+        'external-only': EXTERNAL_ONLY,
+        'mirror': MIRROR
+    }
 
 # storing what's necessary for screen setup
 class ScreenSetup:
@@ -50,10 +58,15 @@ class ScreenSetup:
         args = ["--mode", res2xrandr(self.extResolution)] # set external screen to desired resolution
         if self.extIsPrimary:
             args.append('--primary')
+        # set position
         if self.relPosition == RelativeScreenPosition.LEFT:
             args += ['--left-of', intName]
         elif self.relPosition == RelativeScreenPosition.RIGHT:
             args += ['--right-of', intName]
+        elif self.relPosition == RelativeScreenPosition.MIRROR:
+            args += ['--same-as', intName]
+        else:
+            assert self.relPosition == RelativeScreenPosition.EXTERNAL_ONLY
         return args
 
 # Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
@@ -186,7 +199,7 @@ if __name__ == "__main__":
                             dest="frontend",
                             help="The frontend to be used for user interaction")
         parser.add_argument("-r", "--relative-position",
-                            dest="rel_position", choices=('left', 'right', 'external-only'),
+                            dest="rel_position", choices=RelativeScreenPosition.__names__.keys(),
                             help="Position of external screen relative to internal one")
         parser.add_argument("-i", "--internal-only",
                             dest="internal_only", action='store_true',
@@ -210,19 +223,19 @@ if __name__ == "__main__":
         usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
         hasExternal = not cmdArgs.internal_only and usedExternalConnector is not None
         if hasExternal:
+            # compute the list of resolutons available on both
+            commonRes = [res for res in connectors[usedExternalConnector] if res in connectors[internalConnector]]
             # there's an external screen connected, we need to get a setup
             if cmdArgs.rel_position is not None:
-                # use command-line arguments (can we do this relPosition stuff more elegant?)
-                if cmdArgs.rel_position == 'left':
-                    relPosition = RelativeScreenPosition.LEFT
-                elif cmdArgs.rel_position == 'right':
-                    relPosition = RelativeScreenPosition.RIGHT
+                # use command-line arguments
+                relPosition = RelativeScreenPosition.__names__[cmdArgs.rel_position]
+                if relPosition == RelativeScreenPosition.MIRROR:
+                    setup = ScreenSetup(relPosition, commonRes[0], commonRes[0]) # use default resolutions
                 else:
-                    relPosition = RelativeScreenPosition.EXTERNAL_ONLY
-                setup = ScreenSetup(relPosition, connectors[internalConnector][0], connectors[usedExternalConnector][0]) # use default resolutions
+                    setup = ScreenSetup(relPosition, connectors[internalConnector][0], connectors[usedExternalConnector][0]) # use default resolutions
             else:
                 # use GUI
-                setup = frontend.setup(connectors[internalConnector], connectors[usedExternalConnector])
+                setup = frontend.setup(connectors[internalConnector], connectors[usedExternalConnector], commonRes)
             if setup is None: sys.exit(1) # the user canceled
             # apply it
             connectorArgs[internalConnector] = setup.getInternalArgs()
