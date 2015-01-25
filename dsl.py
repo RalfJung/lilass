@@ -192,23 +192,22 @@ def classifyConnectors(allConnectors):
 
 # if we run top-level
 if __name__ == "__main__":
+    # parse command-line arguments
+    parser = argparse.ArgumentParser(description='easy Display Setup for Laptops')
+    parser.add_argument("-f", "--frontend",
+                        dest="frontend",
+                        help="The frontend to be used for user interaction")
+    parser.add_argument("-r", "--relative-position",
+                        dest="rel_position", choices=RelativeScreenPosition.__names__.keys(),
+                        help="Position of external screen relative to internal one")
+    parser.add_argument("-i", "--internal-only",
+                        dest="internal_only", action='store_true',
+                        help="Enable internal screen, disable all the others (as if no external screen was connected")
+    cmdArgs = parser.parse_args()
+    
+    # load frontend
+    frontend = getFrontend(cmdArgs.frontend)
     try:
-        # parse command-line arguments
-        parser = argparse.ArgumentParser(description='easy Display Setup for Laptops')
-        parser.add_argument("-f", "--frontend",
-                            dest="frontend",
-                            help="The frontend to be used for user interaction")
-        parser.add_argument("-r", "--relative-position",
-                            dest="rel_position", choices=RelativeScreenPosition.__names__.keys(),
-                            help="Position of external screen relative to internal one")
-        parser.add_argument("-i", "--internal-only",
-                            dest="internal_only", action='store_true',
-                            help="Enable internal screen, disable all the others (as if no external screen was connected")
-        cmdArgs = parser.parse_args()
-        
-        # load frontend
-        frontend = getFrontend(cmdArgs.frontend)
-        
         # load connectors and classify them
         connectors = getXrandrInformation()
         (internalConnector, externalConnectors) = classifyConnectors(connectors)
