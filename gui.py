@@ -22,70 +22,70 @@ import sys
 This module implements two functions:
 
 def error(message):
-	This function displays the error message to the user in some appropriate fassion
+    This function displays the error message to the user in some appropriate fassion
 
 def setup(internalResolutions, externalResolutions):
-	Both arguments are lists of (width, height) tuples of resolutions. You can use dsl.res2user to obtain a user-readable representation of a resolution tuple.
-	The user should be asked about his display setup preferences.
-	The function returns None if the user cancelled, and an instance of dsl.ScreenSetup otherwise.
+    Both arguments are lists of (width, height) tuples of resolutions. You can use dsl.res2user to obtain a user-readable representation of a resolution tuple.
+    The user should be asked about his display setup preferences.
+    The function returns None if the user cancelled, and an instance of dsl.ScreenSetup otherwise.
 '''
 import subprocess, collections
 
 # Qt frontend
 class QtFrontend:
-	def __init__(self):
-		from PyQt4 import QtGui
-		self.app = QtGui.QApplication(sys.argv)
-		print("Qt loaded")
-	
-	def error(self, message):
-		from PyQt4 import QtGui
-		QtGui.QMessageBox.critical(None, 'Fatal error', message)
-	
-	def setup(self, internalResolutions, externalResolutions):
-		from qt_dialogue import PositionSelection
-		return PositionSelection(internalResolutions, externalResolutions).run()
-	
-	@staticmethod
-	def isAvailable():
-		try:
-			import PyQt4
-			return True
-		except ImportError:
-			return False
+    def __init__(self):
+        from PyQt4 import QtGui
+        self.app = QtGui.QApplication(sys.argv)
+        print("Qt loaded")
+    
+    def error(self, message):
+        from PyQt4 import QtGui
+        QtGui.QMessageBox.critical(None, 'Fatal error', message)
+    
+    def setup(self, internalResolutions, externalResolutions):
+        from qt_dialogue import PositionSelection
+        return PositionSelection(internalResolutions, externalResolutions).run()
+    
+    @staticmethod
+    def isAvailable():
+        try:
+            import PyQt4
+            return True
+        except ImportError:
+            return False
 
 
 # Zenity frontend
 class ZenityFrontend:
-	def error(message):
-		'''Displays a fatal error to the user'''
-		subprocess.check_call(["zenity", "--error", "--text="+message])
-	
-	def setup(self, internalResolutions, externalResolutions):
-		from zenity_dialogue import run
-		run(internalResolutions, externalResolutions)
-	
-	@staticmethod
-	def isAvailable():
-		try:
-			from dsl import processOutputIt
-			processOutputIt("zenity", "--version")
-			return True
-		except Exception:
-			return False
+    def error(message):
+        '''Displays a fatal error to the user'''
+        subprocess.check_call(["zenity", "--error", "--text="+message])
+    
+    def setup(self, internalResolutions, externalResolutions):
+        from zenity_dialogue import run
+        run(internalResolutions, externalResolutions)
+    
+    @staticmethod
+    def isAvailable():
+        try:
+            from dsl import processOutputIt
+            processOutputIt("zenity", "--version")
+            return True
+        except Exception:
+            return False
 
 
 # CLI frontend
 class CLIFrontend:
-	def error(self, message):
-		print(message, file=sys.stderr)
-	
-	def setup(self, internalResolutions, externalResolutions):
-		raise Exception("Choosing the setup interactively is not supported with the CLI frontend")
-	
-	@staticmethod
-	def isAvailable():
-		return True
+    def error(self, message):
+        print(message, file=sys.stderr)
+    
+    def setup(self, internalResolutions, externalResolutions):
+        raise Exception("Choosing the setup interactively is not supported with the CLI frontend")
+    
+    @staticmethod
+    def isAvailable():
+        return True
 
 # list of available frontends
 frontends = collections.OrderedDict()
@@ -95,15 +95,15 @@ frontends["cli"] = CLIFrontend
 
 # get a frontend
 def getFrontend(name = None):
-	# by name
-	if name is not None:
-		if name in frontends:
-			if frontends[name].isAvailable():
-				return frontends[name]() # call constructor
-		# frontend not found or not available
-		raise Exception("Frontend %s not found or not available" % name)
-	# auto-detect
-	for frontend in frontends.values():
-		if frontend.isAvailable():
-			return frontend() # call constructor
-	raise Exception("No frontend is available - this should not happen")
+    # by name
+    if name is not None:
+        if name in frontends:
+            if frontends[name].isAvailable():
+                return frontends[name]() # call constructor
+        # frontend not found or not available
+        raise Exception("Frontend %s not found or not available" % name)
+    # auto-detect
+    for frontend in frontends.values():
+        if frontend.isAvailable():
+            return frontend() # call constructor
+    raise Exception("No frontend is available - this should not happen")
