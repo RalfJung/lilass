@@ -252,9 +252,12 @@ if __name__ == "__main__":
         
         # make sure the internal screen is really, *really* turned on if there is no external screen
         if not hasExternal:
-            backlight = float(subprocess.check_output(["xbacklight", "-get"]).strip())
-            if backlight == 0: # it's completely turned off, we better enable it
-                subprocess.check_call(["xbacklight", "-set", "100"])
+            try:
+                backlight = float(subprocess.check_output(["xbacklight", "-get"]).strip())
+                if backlight == 0: # it's completely turned off, we better enable it
+                    subprocess.check_call(["xbacklight", "-set", "100"])
+            except FileNotFoundError:
+                print("xbacklight has not been found, unable to turn your laptop backlight on.")
     except Exception as e:
         frontend.error(str(e))
         raise
