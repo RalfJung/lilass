@@ -21,7 +21,8 @@ from gui import getFrontend
 frontend = getFrontend("cli") # the fallback, until we got a proper frontend. This is guaranteed to be available.
 
 # for auto-config: common names of internal connectors
-commonInternalConnectorNames = ['LVDS', 'LVDS0', 'LVDS1', 'LVDS-0', 'LVDS-1']
+commonInternalConnectorPrefixes = ['LVDS', 'eDP']
+commonInternalConnectorSuffices = ['', '0', '1', '-0', '-1']
 
 # this is as close as one can get to an enum in Python
 class RelativeScreenPosition:
@@ -91,6 +92,12 @@ def loadConfigFile(filename):
                 raise Exception("Invalid config, line %d: Error parsing line (may be a quoting issue)." % linenr)
     # add some convencience get functions
     return result
+
+# iterator yielding common names of internal connectors
+def commonInternalConnectorNames():
+    for prefix in commonInternalConnectorPrefixes:
+        for suffix in commonInternalConnectorSuffices:
+            yield prefix+suffix
 
 # helper function: execute a process, return output as iterator, throw exception if there was an error
 # you *must* iterate to the end if you use this!
@@ -171,7 +178,7 @@ def classifyConnectors(allConnectors):
             raise Exception("Connector %s does not exist, there is an error in your config file." % internalConnector)
     else:
         # auto-config
-        internalConnector = findAvailableConnector(commonInternalConnectorNames, allConnectors)
+        internalConnector = findAvailableConnector(commonInternalConnectorNames(), allConnectors)
         if internalConnector is None:
             raise Exception("Could not automatically find internal connector, please use ~/.dsl.conf to specify it manually.")
     # all the rest is external then, obviously - unless the user wants to do that manually
@@ -218,7 +225,6 @@ if __name__ == "__main__":
             connectorArgs[c] = ["--off"]
         
         # check whether we got an external screen or not
-        # Check what to do
         usedExternalConnector = findAvailableConnector(externalConnectors, connectors) # *the* external connector which is actually used
         hasExternal = not cmdArgs.internal_only and usedExternalConnector is not None
         if hasExternal:
