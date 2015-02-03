@@ -264,6 +264,8 @@ if __name__ == "__main__":
                     subprocess.check_call(["xbacklight", "-set", "100"])
             except FileNotFoundError:
                 print("xbacklight has not been found, unable to turn your laptop backlight on.")
+            except subprocess.CalledProcessError:
+                print("xbacklight returned an error while attempting to turn your laptop backlight on.")
     except Exception as e:
         frontend.error(str(e))
         raise
