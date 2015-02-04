@@ -63,7 +63,7 @@ class ZenityFrontend:
     
     def setup(self, internalResolutions, externalResolutions, commonRes):
         from zenity_dialogue import run
-        run(internalResolutions, externalResolutions)
+        return run(internalResolutions, externalResolutions)
     
     @staticmethod
     def isAvailable():

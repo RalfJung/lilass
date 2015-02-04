@@ -21,8 +21,12 @@ def userChoose (title, choices, returns, fallback):
     assert len(choices) == len(returns)
     args = ["zenity", "--list", "--text="+title, "--column="]+choices
     switch = dict (list(zip (choices,returns)))
-    for line in processOutputIt(*args):
-        return switch.get(line.strip(), fallback)
+    try:
+        for line in processOutputIt(*args):
+            return switch.get(line.strip(), fallback)
+    except Exception:
+        # on user cancel, the return code of zenity is nonzero
+        return fallback
     return fallback
 
 def run (internalResolutions, externalResolutions):
@@ -30,10 +34,19 @@ def run (internalResolutions, externalResolutions):
     if relpos == None:
         return None
     intres = internalResolutions[0]
+    extres = externalResolutions[0]
+    extprim = None
     if relpos != RelativeScreenPosition.EXTERNAL_ONLY:
-        intres = userChoose ("internal display resolution", list(map(res2user,internalResolutions)), internalResolutions, internalResolutions[0])
-    extres = userChoose ("external display resolution", list(map(res2user,externalResolutions)), externalResolutions, externalResolutions[0])
-    extprim = userChoose ("Which display should be the primary display?", ["internal display", "external display"], [False, True], None)
+        intres = userChoose ("internal display resolution", list(map(res2user,internalResolutions)), internalResolutions, None)
+        if intres == None:
+            return None
+    else:
+        extprim = True
+    extres = userChoose ("external display resolution", list(map(res2user,externalResolutions)), externalResolutions, None)
+    if extres == None:
+        return None
+    if extprim == None:
+        extprim = userChoose ("Which display should be the primary display?", ["internal display", "external display"], [False, True], None)
     if extprim == None:
         return None
     return ScreenSetup(relpos,intres,extres,extprim)
