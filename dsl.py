@@ -21,6 +21,7 @@ from enum import Enum
 import gui, screen
 frontend = gui.getFrontend("cli") # the fallback, until we got a proper frontend. This is guaranteed to be available.
 
+
 # for auto-config: common names of internal connectors
 commonInternalConnectorPrefixes = ['LVDS', 'eDP']
 commonInternalConnectorSuffices = ['', '0', '1', '-0', '-1']
@@ -66,35 +67,75 @@ def turnOnBacklight():
         print("xbacklight returned an error while attempting to turn your laptop backlight on.")
 
 
+# return the current sceen situation, using the configuration to control connecor detection
+def situationByConfig(config):
+    # internal connectors
+    if 'internalConnector' in config:
+        if len(config['internalConnector']) != 1:
+            raise Exception("You must specify exactly one internal connector.")
+        internalConnectors = config['internalConnector']
+    else:
+        internalConnectors = commonInternalConnectorNames()
+    # run!
+    return screen.ScreenSituation(internalConnectors, config.get('externalConnectors'))
+
+
 # if we run top-level
 if __name__ == "__main__":
-    # parse command-line arguments
-    parser = argparse.ArgumentParser(description='easy Display Setup for Laptops')
-    parser.add_argument("-f", "--frontend",
-                        dest="frontend",
-                        help="The frontend to be used for user interaction")
-    parser.add_argument("-r", "--relative-position",
-                        dest="rel_position", choices=list(map(str.lower, screen.RelativeScreenPosition.__members__.keys())),
-                        help="Position of external screen relative to internal one")
-    parser.add_argument("-i", "--internal-only",
-                        dest="internal_only", action='store_true',
-                        help="Enable internal screen, disable all the others (as if no external screen was connected")
-    cmdArgs = parser.parse_args()
-    
-    # load frontend early (for error mssages)
-    frontend = gui.getFrontend(cmdArgs.frontend)
     try:
+        # how do we filter the RelativeScreenPosition for the CLI?
+        relPosFilter = str.lower
+        
+        # parse command-line arguments
+        parser = argparse.ArgumentParser(description='easy Display Setup for Laptops')
+        parser.add_argument("-f", "--frontend",
+                            dest="frontend",
+                            help="The frontend to be used for user interaction")
+        parser.add_argument("-r", "--relative-position",
+                            dest="rel_position", choices=list(map(relPosFilter, screen.RelativeScreenPosition.__members__.keys())),
+                            help="Set the position of external screen relative to internal one.")
+        parser.add_argument("-e", "--external-only",
+                            dest="external_only", action='store_true',
+                            help="If an external screen is connected, disable all the others.")
+        parser.add_argument("-i", "--internal-only",
+                            dest="internal_only", action='store_true',
+                            help="Enable internal screen, disable all the others.")
+        cmdArgs = parser.parse_args()
+    
+        # load frontend early (for error mssages)
+        frontend = gui.getFrontend(cmdArgs.frontend)
+        
+        # load configuration
+        config = loadConfigFile(os.getenv('HOME') + '/.dsl.conf')
+        
         # see what situation we are in
-        situation = screen.ScreenSituation(commonInternalConnectorNames())
+        situation = situationByConfig(config)
         
         # construct the ScreenSetup
         setup = None
-        if situation.externalResolutions() is not None:
-            setup = frontend.setup(situation)
-            if setup is None: sys.exit(1) # the user canceled
+        if not cmdArgs.internal_only and situation.externalResolutions() is not None:
+            # there's an external screen connected that we may want to use
+            if cmdArgs.external_only:
+                setup = screen.ScreenSetup(intResolution = None, extResolution = situation.externalResolutions()[0])
+            elif cmdArgs.rel_position is not None:
+                # construct automatically, based on CLI arguments
+                # first, figure out the desired RelativeScreenPosition... waht a bad hack...
+                relPos = list(filter(lambda relPosItem: relPosFilter(relPosItem[0]) == cmdArgs.rel_position, screen.RelativeScreenPosition.__members__.items()))
+                assert len(relPos) == 1, "CLI argument is ambigue"
+                relPos = relPos[0][1]
+                # now we construct the ScreenSetup
+                if relPos == screen.RelativeScreenPosition.MIRROR:
+                    res = situation.commonResolutions()[0]
+                    setup = screen.ScreenSetup(res, res, relPos)
+                else:
+                    setup = screen.ScreenSetup(intResolution = situation.internalResolutions()[0], extResolution = situation.externalResolutions()[0], relPosition = relPos)
+            else:
+                # ask the user
+                setup = frontend.setup(situation)
+                if setup is None: sys.exit(1) # the user canceled
         else:
             # use first resolution of internal connector
-            setup = ScreenSetup(intResolution = situation.internalResolutions()[0], extResolution = None)
+            setup = screen.ScreenSetup(intResolution = situation.internalResolutions()[0], extResolution = None)
         
         # call xrandr
         xrandrCall = situation.forXrandr(setup)

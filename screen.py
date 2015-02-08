@@ -126,18 +126,19 @@ class ScreenSituation:
            just choose any remaining connector.'''
         # which connectors are there?
         self._getXrandrInformation()
-        print(self.connectors)
         # figure out which is the internal connector
         self.internalConnector = self._findAvailableConnector(internalConnectorNames)
         if self.internalConnector is None:
-            raise Exception("Could not automatically find internal connector, please use ~/.dsl.conf to specify it manually.")
-        print(self.internalConnector)
+            raise Exception("Could not automatically find internal connector, please use (or fix) ~/.dsl.conf to specify it manually.")
+        print("Detected internal connector:",self.internalConnector)
         # and the external one
         if externalConnectorNames is None:
             externalConnectorNames = list(self.connectors.keys())
             externalConnectorNames.remove(self.internalConnector)
         self.externalConnector = self._findAvailableConnector(externalConnectorNames)
-        print(self.externalConnector)
+        if self.internalConnector == self.externalConnector:
+            raise Exception("Internal and external connector are the same. This must not happen. Please fix ~/.dsl.conf.");
+        print("Detected external connector:",self.externalConnector)
     
     # Run xrandr and fill the dict of connector names mapped to lists of available resolutions.
     def _getXrandrInformation(self):
