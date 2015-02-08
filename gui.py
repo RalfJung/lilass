@@ -1,5 +1,5 @@
 # DSL - easy Display Setup for Laptops
-# Copyright (C) 2012 Ralf Jung <post@ralfj.de>
+# Copyright (C) 2012-2015 Ralf Jung <post@ralfj.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,9 +42,9 @@ class QtFrontend:
         from PyQt4 import QtGui
         QtGui.QMessageBox.critical(None, 'Fatal error', message)
     
-    def setup(self, internalResolutions, externalResolutions, commonRes):
+    def setup(self, situation):
         from qt_dialogue import PositionSelection
-        return PositionSelection(internalResolutions, externalResolutions, commonRes).run()
+        return PositionSelection(situation).run()
     
     @staticmethod
     def isAvailable():
@@ -61,9 +61,9 @@ class ZenityFrontend:
         '''Displays a fatal error to the user'''
         subprocess.check_call(["zenity", "--error", "--text="+message])
     
-    def setup(self, internalResolutions, externalResolutions, commonRes):
+    def setup(self, situation):
         from zenity_dialogue import run
-        return run(internalResolutions, externalResolutions)
+        return run(situation.internalResolutions(), situation.externalResolutions())
     
     @staticmethod
     def isAvailable():

@@ -1,5 +1,6 @@
 # DSL - easy Display Setup for Laptops
-# Copyright (C) 2012 Ralf Jung <post@ralfj.de>
+# Copyright (C) 2012      Ralf Jung <post@ralfj.de>
+# Copyright (C) 2012-2015 Constantin Berhard<constantin@exxxtremesys.lu>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-from dsl import RelativeScreenPosition, ScreenSetup, res2user, processOutputIt
+from screen import RelativeScreenPosition, ScreenSetup, processOutputIt
 
 def userChoose (title, choices, returns, fallback):
     assert len(choices) == len(returns)
@@ -37,16 +38,16 @@ def run (internalResolutions, externalResolutions):
     extres = externalResolutions[0]
     extprim = None
     if relpos != RelativeScreenPosition.EXTERNAL_ONLY:
-        intres = userChoose ("internal display resolution", list(map(res2user,internalResolutions)), internalResolutions, None)
+        intres = userChoose ("internal display resolution", list(map(str,internalResolutions)), internalResolutions, None)
         if intres == None:
             return None
     else:
         extprim = True
-    extres = userChoose ("external display resolution", list(map(res2user,externalResolutions)), externalResolutions, None)
+    extres = userChoose ("external display resolution", list(map(str,externalResolutions)), externalResolutions, None)
     if extres == None:
         return None
     if extprim == None:
         extprim = userChoose ("Which display should be the primary display?", ["internal display", "external display"], [False, True], None)
     if extprim == None:
         return None
-    return ScreenSetup(relpos,intres,extres,extprim)
+    return ScreenSetup(intres,extres,relpos,extprim)
