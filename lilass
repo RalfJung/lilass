@@ -106,7 +106,7 @@ if __name__ == "__main__":
         frontend = gui.getFrontend(cmdArgs.frontend)
         
         # load configuration
-        config = loadConfigFile(os.getenv('HOME') + '/.dsl.conf')
+        config = loadConfigFile(os.getenv('HOME') + '/.lilass.conf')
         
         # see what situation we are in
         situation = situationByConfig(config)
