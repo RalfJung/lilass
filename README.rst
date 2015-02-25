@@ -75,14 +75,16 @@ connector not mentioned in either option will be completely ignored.
 Source, License
 ---------------
 
-You can find the sources in the `git repository`_. They are provided under
-the GPLv2_ or (at your option) any later version of the GPL.
+You can find the sources in the `git repository`_ and `on GitHub`_. They are
+provided under the GPLv2_ or (at your option) any later version of the GPL.
 
 .. _git repository: http://www.ralfj.de/git/lilass.git
+.. _on GitHub: https://github.com/RalfJung/lilass
 .. _GPLv2: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 Contact
 -------
 
 If you found a bug, or want to leave a comment, please
-`send me a mail <mailto:post-AT-ralfj-DOT-de>`_.
+`send me a mail <mailto:post-AT-ralfj-DOT-de>`_. I'm also happy about pull
+requests :)
