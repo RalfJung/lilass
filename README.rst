@@ -57,7 +57,7 @@ All this is achieved by running the following shell script on log-in::
 
   LILASS=/path/to/lilass
   x-on-resize -c $LILASS
-  $LILASS -r external-only
+  $LILASS --external-only
 
 .. _x-on-resize: http://keithp.com/blogs/x-on-resize/
 
