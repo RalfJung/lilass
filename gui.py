@@ -68,7 +68,7 @@ class ZenityFrontend:
     @staticmethod
     def isAvailable():
         try:
-            from dsl import processOutputIt
+            from screen import processOutputIt
             processOutputIt("zenity", "--version")
             return True
         except Exception:

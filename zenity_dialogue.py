@@ -31,18 +31,12 @@ def userChoose (title, choices, returns, fallback):
     return fallback
 
 def run (internalResolutions, externalResolutions):
-    relpos = userChoose ("Position of external screen", ["Left of internal screen", "Right of internal screen", "Use external screen only"], [RelativeScreenPosition.LEFT, RelativeScreenPosition.RIGHT, RelativeScreenPosition.EXTERNAL_ONLY], None)
+    relpos = userChoose ("Position of external screen", ["Left of internal screen", "Right of internal screen"], [RelativeScreenPosition.LEFT, RelativeScreenPosition.RIGHT], None)
     if relpos == None:
         return None
     intres = internalResolutions[0]
     extres = externalResolutions[0]
-    extprim = None
-    if relpos != RelativeScreenPosition.EXTERNAL_ONLY:
-        intres = userChoose ("internal display resolution", list(map(str,internalResolutions)), internalResolutions, None)
-        if intres == None:
-            return None
-    else:
-        extprim = True
+    extprim = True
     extres = userChoose ("external display resolution", list(map(str,externalResolutions)), externalResolutions, None)
     if extres == None:
         return None
@@ -50,4 +44,4 @@ def run (internalResolutions, externalResolutions):
         extprim = userChoose ("Which display should be the primary display?", ["internal display", "external display"], [False, True], None)
     if extprim == None:
         return None
-    return ScreenSetup(intres,extres,relpos,extprim)
+    return ScreenSetup(intres, extres, relpos, extIsPrimary = extprim)
