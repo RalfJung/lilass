@@ -76,7 +76,8 @@ Source, License
 ---------------
 
 You can find the sources in the `git repository`_ and `on GitHub`_. They are
-provided under the GPLv2_ or (at your option) any later version of the GPL.
+provided under the GPLv2_ or (at your option) any later version of the GPL. See 
+the file ``LICENSE-GPL2`` for more details.
 
 .. _git repository: http://www.ralfj.de/git/lilass.git
 .. _on GitHub: https://github.com/RalfJung/lilass
