@@ -18,15 +18,6 @@ import os
 from screen import RelativeScreenPosition, ScreenSetup
 from PyQt4 import QtCore, QtGui, uic
 
-relPosNames = {
-    RelativeScreenPosition.LEFT: "left of",
-    RelativeScreenPosition.RIGHT: "right of",
-    RelativeScreenPosition.ABOVE: "above",
-    RelativeScreenPosition.BELOW: "below",
-    RelativeScreenPosition.MIRROR: "same as",
-}
-
-
 class PositionSelection(QtGui.QDialog):
     def __init__(self, situation):
         # set up main window
@@ -37,7 +28,7 @@ class PositionSelection(QtGui.QDialog):
         
         # fill relative position box
         for pos in RelativeScreenPosition:
-            self.relPos.addItem(relPosNames[pos], pos)
+            self.relPos.addItem(pos.text, pos)
         
         # keep resolutions in sync when in mirror mode
         def syncIfMirror(source, target):
