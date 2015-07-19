@@ -1,4 +1,4 @@
-LiLaSS - Linux Laptop Screen Setup
+LiLaSS: Linux Laptop Screen Setup
 ==================================
 
 Introduction
