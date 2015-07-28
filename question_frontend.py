@@ -34,9 +34,11 @@ class OperationMode(Enum):
 class QuestionFrontend:
     def userChoose (self, title, choices, returns, fallback):
         raise Exception("The abstract method 'userChoose' has not been implemented by %s"%str(self.__class__))
+
     def selectResolution(self, displayname, availablemodes):
         modedescs = list(map(str, availablemodes))
         return self.userChoose("Select resolution for %s"%displayname, modedescs, availablemodes, None)
+
     def setup (self, situation):
         operationmodes = list(OperationMode)
         operationmodedescs = list(map(lambda x: x.text, operationmodes))
