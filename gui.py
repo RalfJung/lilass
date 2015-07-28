@@ -31,7 +31,8 @@ def setup(internalResolutions, externalResolutions):
 '''
 import subprocess, collections
 
-from question_frontend import QuestionFrontend
+from cli_frontend import CLIFrontend
+from zenity_frontend import ZenityFrontend
 from screen import processOutputIt
 
 # Qt frontend
@@ -56,63 +57,6 @@ class QtFrontend:
             return True
         except ImportError:
             return False
-
-
-# Zenity frontend
-class ZenityFrontend(QuestionFrontend):
-    def error(self, message):
-        '''Displays a fatal error to the user'''
-        subprocess.check_call(["zenity", "--error", "--text="+message])
-    def userChoose (self, title, choices, returns, fallback):
-        assert len(choices) == len(returns)
-        args = ["zenity", "--list", "--text="+title, "--column="]+choices
-        switch = dict (list(zip (choices,returns)))
-        try:
-            for line in processOutputIt(*args):
-                return switch.get(line.strip(), fallback)
-        except Exception:
-            # on user cancel, the return code of zenity is nonzero
-            return fallback
-        # if the output was empty
-        return fallback
-    def isAvailable():
-        try:
-            processOutputIt("zenity", "--version")
-            return True
-        except FileNotFoundError:
-            return False
-        except PermissionError:
-            return False
-
-# CLI frontend
-class CLIFrontend(QuestionFrontend):
-    def error(self, message):
-        print(message, file=sys.stderr)
-
-    def userChoose (self, title, choices, returns, fallback):
-        while True:
-            # print question
-            print(title)
-            for i in range(len(choices)):
-                print("%d. %s"%(i,choices[i]))
-            print("Enter 'c' to cancel.")
-            # handle input
-            answer = input("> ")
-            if answer == "c":
-                return None
-            #else
-            try:
-                answerint = int(answer)
-                if answerint >= 0 and answerint < len(choices):
-                    return returns[answerint]
-            except ValueError:
-                pass
-            # if we are here something invalid was entered
-            print("INVALID ANSWER: '%s'" % answer)
-
-    @staticmethod
-    def isAvailable():
-        return True
 
 # list of available frontends
 frontends = collections.OrderedDict()
