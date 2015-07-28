@@ -16,7 +16,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 # This file abstracts GUI stuff away, so that the actual dsl.py does not have to deal with it
-import sys
 
 '''
 This module implements two functions:
@@ -29,11 +28,11 @@ def setup(internalResolutions, externalResolutions):
     The user should be asked about his display setup preferences.
     The function returns None if the user cancelled, and an instance of dsl.ScreenSetup otherwise.
 '''
-import subprocess, collections
+import sys
+import collections
 
 from cli_frontend import CLIFrontend
 from zenity_frontend import ZenityFrontend
-from screen import processOutputIt
 
 # Qt frontend
 class QtFrontend:
