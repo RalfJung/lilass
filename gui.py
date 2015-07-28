@@ -28,34 +28,12 @@ def setup(internalResolutions, externalResolutions):
     The user should be asked about his display setup preferences.
     The function returns None if the user cancelled, and an instance of dsl.ScreenSetup otherwise.
 '''
-import sys
 import collections
 
+from qt_frontend import QtFrontend
 from cli_frontend import CLIFrontend
 from zenity_frontend import ZenityFrontend
 
-# Qt frontend
-class QtFrontend:
-    def __init__(self):
-        from PyQt4 import QtGui
-        self.app = QtGui.QApplication(sys.argv)
-        print("Qt loaded")
-    
-    def error(self, message):
-        from PyQt4 import QtGui
-        QtGui.QMessageBox.critical(None, 'Fatal error', message)
-    
-    def setup(self, situation):
-        from qt_dialogue import PositionSelection
-        return PositionSelection(situation).run()
-    
-    @staticmethod
-    def isAvailable():
-        try:
-            import PyQt4
-            return True
-        except ImportError:
-            return False
 
 # list of available frontends
 frontends = collections.OrderedDict()
