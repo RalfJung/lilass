@@ -26,6 +26,8 @@ class CLIFrontend(QuestionFrontend):
         print(message, file=sys.stderr)
 
     def userChoose (self, title, choices, returns, fallback):
+        if not sys.stdin.isatty():
+            raise Exception("Choosing the setup interactively is not possible, due to lack of a TTY")
         while True:
             # print question
             print(title)
