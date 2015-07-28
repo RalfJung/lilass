@@ -16,7 +16,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 # This file abstracts GUI stuff away, so that the actual dsl.py does not have to deal with it
-import sys
 
 '''
 This module implements two functions:
@@ -29,7 +28,11 @@ def setup(internalResolutions, externalResolutions):
     The user should be asked about his display setup preferences.
     The function returns None if the user cancelled, and an instance of dsl.ScreenSetup otherwise.
 '''
-import subprocess, collections
+import sys
+import collections
+
+from cli_frontend import CLIFrontend
+from zenity_frontend import ZenityFrontend
 
 # Qt frontend
 class QtFrontend:
@@ -54,39 +57,6 @@ class QtFrontend:
         except ImportError:
             return False
 
-
-# Zenity frontend
-class ZenityFrontend:
-    def error(message):
-        '''Displays a fatal error to the user'''
-        subprocess.check_call(["zenity", "--error", "--text="+message])
-    
-    def setup(self, situation):
-        from zenity_dialogue import run
-        return run(situation.internalResolutions(), situation.externalResolutions())
-    
-    @staticmethod
-    def isAvailable():
-        try:
-            from screen import processOutputIt
-            processOutputIt("zenity", "--version")
-            return True
-        except Exception:
-            return False
-
-
-# CLI frontend
-class CLIFrontend:
-    def error(self, message):
-        print(message, file=sys.stderr)
-    
-    def setup(self, internalResolutions, externalResolutions, commonRes):
-        raise Exception("Choosing the setup interactively is not supported with the CLI frontend")
-    
-    @staticmethod
-    def isAvailable():
-        return True
-
 # list of available frontends
 frontends = collections.OrderedDict()
 frontends["qt"] = QtFrontend
@@ -100,8 +70,10 @@ def getFrontend(name = None):
         if name in frontends:
             if frontends[name].isAvailable():
                 return frontends[name]() # call constructor
-        # frontend not found or not available
-        raise Exception("Frontend %s not found or not available" % name)
+            else:
+                raise Exception("Frontend %s not available" % name)
+        # frontend not found
+        raise Exception("Frontend %s not found" % name)
     # auto-detect
     for frontend in frontends.values():
         if frontend.isAvailable():

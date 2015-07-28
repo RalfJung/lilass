@@ -36,11 +36,16 @@ def processOutputIt(*args):
 
 class RelativeScreenPosition(Enum):
     '''Represents the relative position of the external screen to the internal one'''
-    LEFT      = 0
-    RIGHT     = 1
-    ABOVE     = 2
-    BELOW     = 3
-    MIRROR    = 4
+    LEFT      = ("left of")
+    RIGHT     = ("right of")
+    ABOVE     = ("above")
+    BELOW     = ("below")
+    MIRROR    = ("same as")
+    def __init__(self, text):
+        # auto numbering
+        cls = self.__class__
+        self._value_ = len(cls.__members__)
+        self.text = text
 
 
 class Resolution:
