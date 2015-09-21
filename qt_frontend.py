@@ -19,9 +19,9 @@ from screen import RelativeScreenPosition, ScreenSetup
 
 try:
     # Be fine with PyQt4 not being installed
-    from PyQt4 import QtCore, QtGui, uic
+    from PyQt5 import QtCore, QtWidgets, uic
 
-    class PositionSelection(QtGui.QDialog):
+    class PositionSelection(QtWidgets.QDialog):
         def __init__(self, situation):
             # set up main window
             super(PositionSelection, self).__init__()
@@ -95,7 +95,7 @@ try:
             self.posLabel2.setEnabled(bothEnabled)
             self.relPos.setEnabled(bothEnabled)
             # avoid having no screen
-            self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(intEnabled or extEnabled)
+            self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(intEnabled or extEnabled)
         
         def run(self):
             self.exec_()
@@ -109,13 +109,13 @@ except ImportError:
 # Qt frontend
 class QtFrontend:
     def __init__(self):
-        from PyQt4 import QtGui
-        self.app = QtGui.QApplication(sys.argv)
+        from PyQt5 import QtWidgets
+        self.app = QtWidgets.QApplication(sys.argv)
         print("Qt loaded")
     
     def error(self, message):
-        from PyQt4 import QtGui
-        QtGui.QMessageBox.critical(None, 'Fatal error', message)
+        from PyQt5 import QtWidgets
+        QtWidgets.QMessageBox.critical(None, 'Fatal error', message)
     
     def setup(self, situation):
         return PositionSelection(situation).run()
@@ -123,7 +123,7 @@ class QtFrontend:
     @staticmethod
     def isAvailable():
         try:
-            import PyQt4
+            import PyQt5
             return True
         except ImportError:
             return False

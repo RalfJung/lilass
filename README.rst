@@ -29,8 +29,8 @@ Simply run ``lilass`` to start the interactive mode. A window will pop up,
 allowing you to select which screens are enabled, their resolution, and how they 
 are positioned relatively to each other. The option ``--frontend`` (or ``-f``) 
 can be used to choose the frontend which opens the window. Currently, the 
-frontends ``qt`` and ``zenity`` are available. LiLaSS attempts to choose an 
-adequate frontend automatically.
+frontends ``qt`` (using Qt5) and ``zenity`` are available. LiLaSS attempts to
+choose an adequate frontend automatically.
 
 The option ``--relative-position`` (``-r``) suppresses the interactive 
 configuration. Instead, the given given option (``left``, ``right``, ``above``, 
