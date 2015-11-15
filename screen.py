@@ -119,11 +119,31 @@ class ScreenSetup:
             }[self.relPosition], intName]
         return args
 
+class Connector:
+    name = None # connector name, e.g. "HDMI1"
+    edid = None # EDID string for the connector, or None if disconnected
+    resolutions = [] # list of Resolution objects, empty if disconnected
+    
+    def __init__(self, name=None):
+        self.name = name
+    def __str__(self):
+        return str(self.name)
+    def isConnected(self):
+        assert (self.edid is None) == (len(self.resolutions)==0)
+        return self.edid is not None
+    def addResolution(self, resolution):
+        assert isinstance(resolution, Resolution)
+        self.resolutions.append(resolution)
+    def appendToEdid(self, s):
+        if self.edid is None:
+            self.edid = s
+        else:
+            self.edid += s
 
 class ScreenSituation:
-    connectors = {} # maps connector names to lists of Resolution (empty list -> disabled connector)
-    internalConnector = None # name of the internal connector (will be an enabled one)
-    externalConnector = None # name of the used external connector (an enabled one), or None
+    connectors = [] # contains all the Connector objects
+    internalConnector = None # the internal Connector object (will be an enabled one)
+    externalConnector = None # the used external Connector object (an enabled one), or None
     
     '''Represents the "screen situation" a machine can be in: Which connectors exist, which resolutions do they have, what are the names for the internal and external screen'''
     def __init__(self, internalConnectorNames, externalConnectorNames = None):
@@ -138,8 +158,8 @@ class ScreenSituation:
         print("Detected internal connector:",self.internalConnector)
         # and the external one
         if externalConnectorNames is None:
-            externalConnectorNames = list(self.connectors.keys())
-            externalConnectorNames.remove(self.internalConnector)
+            externalConnectorNames = map(lambda c: c.name, self.connectors)
+            externalConnectorNames = filter(lambda name: name != self.internalConnector.name, externalConnectorNames)
         self.externalConnector = self._findAvailableConnector(externalConnectorNames)
         if self.internalConnector == self.externalConnector:
             raise Exception("Internal and external connector are the same. This must not happen. Please fix ~/.dsl.conf.");
@@ -148,7 +168,16 @@ class ScreenSituation:
     # Run xrandr and fill the dict of connector names mapped to lists of available resolutions.
     def _getXrandrInformation(self):
         connector = None # current connector
-        for line in processOutputGen("xrandr", "-q"):
+        readingEdid = False
+        for line in processOutputGen("xrandr", "-q", "--verbose"):
+            if readingEdid:
+                m = re.match(r'^\s*([0-9a-f]+)\s*$', line)
+                if m is not None:
+                    connector.appendToEdid(m.group(1))
+                    continue
+                else:
+                    readingEdid = False
+                    # fallthrough to the rest of the loop for parsing of this line
             # screen?
             m = re.search(r'^Screen [0-9]+: ', line)
             if m is not None: # ignore this line
@@ -157,37 +186,41 @@ class ScreenSituation:
             # new connector?
             m = re.search(r'^([\w\-]+) (dis)?connected ', line)
             if m is not None:
-                connector = m.groups()[0]
-                assert connector not in self.connectors
-                self.connectors[connector] = []
+                connector = Connector(m.group(1))
+                assert not any(c.name == connector.name for c in self.connectors)
+                self.connectors.append(connector)
                 continue
             # new resolution?
-            m = re.search(r'^   ([\d]+)x([\d]+) +', line)
+            m = re.search(r'^\s*([\d]+)x([\d]+)', line)
             if m is not None:
-                resolution = Resolution(int(m.groups()[0]), int(m.groups()[1]))
+                resolution = Resolution(int(m.group(1)), int(m.group(2)))
                 assert connector is not None
-                self.connectors[connector].append(resolution)
+                connector.addResolution(resolution)
+                continue
+            # EDID?
+            m = re.search(r'^\s*EDID:\s*$', line)
+            if m is not None:
+                readingEdid = True
                 continue
             # unknown line
             # not fatal, e.g. xrandr shows strange stuff when a display is enabled, but not connected
             print("Warning: Unknown xrandr line %s" % line)
     
-    # return the first available connector from those listed in <tryConnectors>, skipping disabled connectors
-    def _findAvailableConnector(self, tryConnectors):
-        for connector in tryConnectors:
-            if connector in self.connectors and len(self.connectors[connector]): # if the connector exists and is active (i.e. there is a resolution)
-                return connector
+    # return the first available connector from those listed in <tryConnectorNames>, skipping disabled connectors
+    def _findAvailableConnector(self, tryConnectorNames):
+        for c in filter(lambda c: c.name in tryConnectorNames and c.isConnected(), self.connectors):
+            return c
         return None
     
     # return available internal resolutions
     def internalResolutions(self):
-        return self.connectors[self.internalConnector]
+        return self.internalConnector.resolutions
     
     # return available external resolutions (or None, if there is no external screen connected)
     def externalResolutions(self):
         if self.externalConnector is None:
             return None
-        return self.connectors[self.externalConnector]
+        return self.externalConnector.resolutions
     
     # return resolutions available for both internal and external screen
     def commonResolutions(self):
@@ -200,12 +233,12 @@ class ScreenSituation:
     def forXrandr(self, setup):
         # turn all screens off
         connectorArgs = {} # maps connector names to xrand arguments
-        for c in self.connectors.keys():
-            connectorArgs[c] = ["--off"]
+        for c in self.connectors:
+            connectorArgs[c.name] = ["--off"]
         # set arguments for the relevant ones
-        connectorArgs[self.internalConnector] = setup.getInternalArgs()
+        connectorArgs[self.internalConnector.name] = setup.getInternalArgs()
         if self.externalConnector is not None:
-            connectorArgs[self.externalConnector] = setup.getExternalArgs(self.internalConnector)
+            connectorArgs[self.externalConnector.name] = setup.getExternalArgs(self.internalConnector.name)
         else:
             assert setup.extResolution is None, "There's no external screen to set a resolution for"
         # now compose the arguments
