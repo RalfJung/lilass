@@ -146,4 +146,5 @@ if __name__ == "__main__":
         if setup.extResolution is None:
             turnOnBacklight()
     except Exception as e:
+        raise e
         frontend.error(str(e))

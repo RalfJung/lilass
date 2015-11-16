@@ -18,6 +18,7 @@
 
 import re, subprocess
 from enum import Enum
+from functools import total_ordering
 
 ## utility functions
 
@@ -47,7 +48,6 @@ class RelativeScreenPosition(Enum):
         self._value_ = len(cls.__members__)
         self.text = text
 
-
 class Resolution:
     '''Represents a resolution of a screen'''
     def __init__(self, width, height):
@@ -62,6 +62,9 @@ class Resolution:
     def __ne__(self, other):
         return not self.__eq__(other)
     
+    def __hash__(self):
+        return hash(("Resolution",self.width,self.height))
+    
     def __str__(self):
         # get ratio
         ratio = int(round(16.0*self.height/self.width))
@@ -75,6 +78,9 @@ class Resolution:
     
     def __repr__(self):
         return 'screen.Resolution('+self.forXrandr()+')'
+    
+    def pixelCount(self):
+        return self.width * self.height
     
     def forXrandr(self):
         return str(self.width)+'x'+str(self.height)
@@ -120,20 +126,25 @@ class ScreenSetup:
         return args
 
 class Connector:
-    name = None # connector name, e.g. "HDMI1"
-    edid = None # EDID string for the connector, or None if disconnected
-    resolutions = [] # list of Resolution objects, empty if disconnected
-    
     def __init__(self, name=None):
-        self.name = name
+        self.name = name         # connector name, e.g. "HDMI1"
+        self.edid = None         # EDID string for the connector, or None if disconnected
+        self.resolutions = set() # list of Resolution objects, empty if disconnected
+    
     def __str__(self):
         return str(self.name)
+    
+    def __repr__(self):
+        return """<Connector "%s" EDID="%s" resolutions="%s">""" % (str(self.name), str(self.edid), ", ".join(str(r) for r in self.resolutions))
+    
     def isConnected(self):
         assert (self.edid is None) == (len(self.resolutions)==0)
         return self.edid is not None
+    
     def addResolution(self, resolution):
         assert isinstance(resolution, Resolution)
-        self.resolutions.append(resolution)
+        self.resolutions.add(resolution)
+    
     def appendToEdid(self, s):
         if self.edid is None:
             self.edid = s
@@ -151,6 +162,9 @@ class ScreenSituation:
            just choose any remaining connector.'''
         # which connectors are there?
         self._getXrandrInformation()
+        for c in self.connectors:
+            print(repr(c))
+            print()
         # figure out which is the internal connector
         self.internalConnector = self._findAvailableConnector(internalConnectorNames)
         if self.internalConnector is None:
@@ -159,7 +173,7 @@ class ScreenSituation:
         # and the external one
         if externalConnectorNames is None:
             externalConnectorNames = map(lambda c: c.name, self.connectors)
-            externalConnectorNames = filter(lambda name: name != self.internalConnector.name, externalConnectorNames)
+            externalConnectorNames = set(filter(lambda name: name != self.internalConnector.name, externalConnectorNames))
         self.externalConnector = self._findAvailableConnector(externalConnectorNames)
         if self.internalConnector == self.externalConnector:
             raise Exception("Internal and external connector are the same. This must not happen. Please fix ~/.dsl.conf.");
@@ -204,7 +218,7 @@ class ScreenSituation:
                 continue
             # unknown line
             # not fatal, e.g. xrandr shows strange stuff when a display is enabled, but not connected
-            print("Warning: Unknown xrandr line %s" % line)
+            #print("Warning: Unknown xrandr line %s" % line)
     
     # return the first available connector from those listed in <tryConnectorNames>, skipping disabled connectors
     def _findAvailableConnector(self, tryConnectorNames):
@@ -227,7 +241,7 @@ class ScreenSituation:
         internalRes = self.internalResolutions()
         externalRes = self.externalResolutions()
         assert externalRes is not None
-        return [res for res in externalRes if res in internalRes]
+        return sorted(set(res for res in externalRes if res in internalRes), key=lambda r: -r.pixelCount())
     
     # compute the xrandr call
     def forXrandr(self, setup):
