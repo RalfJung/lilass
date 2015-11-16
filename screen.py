@@ -18,7 +18,6 @@
 
 import re, subprocess
 from enum import Enum
-from functools import total_ordering
 
 ## utility functions
 
@@ -241,7 +240,7 @@ class ScreenSituation:
         internalRes = self.internalResolutions()
         externalRes = self.externalResolutions()
         assert externalRes is not None
-        return sorted(set(res for res in externalRes if res in internalRes), key=lambda r: -r.pixelCount())
+        return sorted(set(externalRes).intersection(internalRes), key=lambda r: -r.pixelCount())
     
     # compute the xrandr call
     def forXrandr(self, setup):
