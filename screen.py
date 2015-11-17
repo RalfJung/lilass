@@ -129,6 +129,7 @@ class Connector:
         self.name = name         # connector name, e.g. "HDMI1"
         self.edid = None         # EDID string for the connector, or None if disconnected
         self.resolutions = set() # list of Resolution objects, empty if disconnected
+        self.preferredResolution = None
     
     def __str__(self):
         return str(self.name)
@@ -149,6 +150,11 @@ class Connector:
             self.edid = s
         else:
             self.edid += s
+    
+    def getPreferredResolution(self):
+        if self.preferredResolution:
+            return self.preferredResolution
+        return max(self.resolutions, key=lambda r: r.pixelCount())
 
 class ScreenSituation:
     connectors = [] # contains all the Connector objects
@@ -209,6 +215,8 @@ class ScreenSituation:
                 resolution = Resolution(int(m.group(1)), int(m.group(2)))
                 assert connector is not None
                 connector.addResolution(resolution)
+                if '+preferred' in line:
+                    connector.preferredResolution = resolution
                 continue
             # EDID?
             m = re.search(r'^\s*EDID:\s*$', line)
