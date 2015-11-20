@@ -126,24 +126,24 @@ class ScreenSetup:
 
 class Connector:
     def __init__(self, name=None):
-        self.name = name         # connector name, e.g. "HDMI1"
-        self.edid = None         # EDID string for the connector, or None if disconnected
-        self.resolutions = set() # list of Resolution objects, empty if disconnected
+        self.name = name # connector name, e.g. "HDMI1"
+        self.edid = None # EDID string for the connector, or None if disconnected
+        self._resolutions = set() # list of Resolution objects, empty if disconnected
         self.preferredResolution = None
     
     def __str__(self):
         return str(self.name)
     
     def __repr__(self):
-        return """<Connector "%s" EDID="%s" resolutions="%s">""" % (str(self.name), str(self.edid), ", ".join(str(r) for r in self.resolutions))
+        return """<Connector "%s" EDID="%s" resolutions="%s">""" % (str(self.name), str(self.edid), ", ".join(str(r) for r in self.getResolutionList()))
     
     def isConnected(self):
-        assert (self.edid is None) == (len(self.resolutions)==0)
+        assert (self.edid is None) == (len(self._resolutions)==0)
         return self.edid is not None
     
     def addResolution(self, resolution):
         assert isinstance(resolution, Resolution)
-        self.resolutions.add(resolution)
+        self._resolutions.add(resolution)
     
     def appendToEdid(self, s):
         if self.edid is None:
@@ -151,10 +151,8 @@ class Connector:
         else:
             self.edid += s
     
-    def getPreferredResolution(self):
-        if self.preferredResolution:
-            return self.preferredResolution
-        return max(self.resolutions, key=lambda r: r.pixelCount())
+    def getResolutionList(self):
+        return sorted(self._resolutions, key=lambda r: (0 if r==self.preferredResolution else 1, -r.pixelCount()))
 
 class ScreenSituation:
     connectors = [] # contains all the Connector objects
@@ -235,13 +233,13 @@ class ScreenSituation:
     
     # return available internal resolutions
     def internalResolutions(self):
-        return self.internalConnector.resolutions
+        return self.internalConnector.getResolutionList()
     
     # return available external resolutions (or None, if there is no external screen connected)
     def externalResolutions(self):
         if self.externalConnector is None:
             return None
-        return self.externalConnector.resolutions
+        return self.externalConnector.getResolutionList()
     
     # return resolutions available for both internal and external screen
     def commonResolutions(self):

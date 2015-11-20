@@ -141,7 +141,7 @@ if __name__ == "__main__":
                 if setup is None: sys.exit(1) # the user canceled
         else:
             # use first resolution of internal connector
-            setup = screen.ScreenSetup(intResolution = situation.internalConnector.getPreferredResolution(), extResolution = None)
+            setup = screen.ScreenSetup(intResolution = situation.internalConnector.getResolutionList()[0], extResolution = None)
         
         # call xrandr
         xrandrCall = situation.forXrandr(setup)
