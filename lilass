@@ -18,7 +18,7 @@
 
 import argparse, sys, os, os.path, shutil, re, subprocess
 from enum import Enum
-import gui, screen, util
+import gui, screen, util, database
 frontend = gui.getFrontend("cli") # the fallback, until we got a proper frontend. This is guaranteed to be available.
 
 
@@ -78,6 +78,18 @@ def situationByConfig(config):
     # run!
     return screen.ScreenSituation(internalConnectors, config.get('externalConnectors'))
 
+class ShowLevels(Enum):
+    ONEXTERNAL = ("on-external")
+    ONNEW = ("on-new")
+    ONERROR = ("on-error")
+    def __init__(self, text):
+        # auto numbering
+        cls = self.__class__
+        self._value_ = len(cls.__members__) + 1
+        self.text = text
+    @classmethod
+    def getNames(cls):
+        return list(x.text for x in cls)
 
 # if we run top-level
 if __name__ == "__main__":
@@ -99,12 +111,16 @@ if __name__ == "__main__":
         parser.add_argument("-i", "--internal-only",
                             dest="internal_only", action='store_true',
                             help="Enable internal screen, disable all the others.")
+        parser.add_argument("-s", "--show",
+                            dest="show", choices=ShowLevels.getNames(),
+                            help="In which situations should the UI be displayed?")
         cmdArgs = parser.parse_args()
     
         # load frontend early (for error mssages)
         frontend = gui.getFrontend(cmdArgs.frontend)
         
-        # load configuration
+        # find files
+        ## find config file
         legacyConfigFilePath = os.getenv('HOME') + '/.lilass.conf'
         configDirectory = util.getConfigDirectory()
         configFilePath = os.path.join(configDirectory, "lilass.conf")
@@ -112,10 +128,21 @@ if __name__ == "__main__":
             # looks like we just upgraded to a new version of lilass
             util.mkdirP(configDirectory)
             shutil.move(legacyConfigFilePath, configFilePath)
+        ## find database
+        dataDirectory = util.getDataDirectory()
+        util.mkdirP(dataDirectory)
+        databaseFilePath = os.path.join(dataDirectory, "collected_data.sqlite")
+
+        # load configuration
         config = loadConfigFile(configFilePath)
         
         # see what situation we are in
         situation = situationByConfig(config)
+        
+        # fetch info from the database
+        # if it is too slow to open the DB twice (reading and saving), we can keep it open all the time
+        with database.Database(databaseFilePath) as db:
+            situation.fetchDBInfo(db)
         
         # construct the ScreenSetup
         setup = None
@@ -139,6 +166,8 @@ if __name__ == "__main__":
                 # ask the user
                 setup = frontend.setup(situation)
                 if setup is None: sys.exit(1) # the user canceled
+                with database.Database(databaseFilePath) as db:
+                    situation.putDBInfo(db, setup)
         else:
             # use first resolution of internal connector
             setup = screen.ScreenSetup(intResolution = situation.internalConnector.getResolutionList()[0], extResolution = None)

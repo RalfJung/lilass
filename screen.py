@@ -45,7 +45,7 @@ class RelativeScreenPosition(Enum):
     def __init__(self, text):
         # auto numbering
         cls = self.__class__
-        self._value_ = len(cls.__members__)
+        self._value_ = len(cls.__members__) + 1
         self.text = text
 
 class Resolution:
@@ -53,6 +53,24 @@ class Resolution:
     def __init__(self, width, height):
         self.width = width
         self.height = height
+    
+    @classmethod
+    def fromDatabase(cls, dbstr):
+        if dbstr is None:
+            return None
+        parts = dbstr.split("x")
+        if len(parts) != 2:
+            raise ValueError(xrandrstr)
+        return Resolution(*map(int,parts))
+    
+    def forDatabase(self):
+        return str(self.width)+'x'+str(self.height)
+    
+    def forXrandr(self):
+        return self.forDatabase()
+    
+    def toTuple(self):
+        return (self.width, self.height)
     
     def __eq__(self, other):
         if not isinstance(other, Resolution):
@@ -76,9 +94,6 @@ class Resolution:
     
     def pixelCount(self):
         return self.width * self.height
-    
-    def forXrandr(self):
-        return str(self.width)+'x'+str(self.height)
 
 
 class ScreenSetup:
@@ -126,12 +141,28 @@ class Connector:
         self.edid = None # EDID string for the connector, or None if disconnected
         self._resolutions = set() # list of Resolution objects, empty if disconnected
         self.preferredResolution = None
+        self.__lastResolution = None
+        self.hasLastResolution = False
     
     def __str__(self):
         return str(self.name)
     
     def __repr__(self):
         return """<Connector "%s" EDID="%s" resolutions="%s">""" % (str(self.name), str(self.edid), ", ".join(str(r) for r in self.getResolutionList()))
+    
+    def __setLastRes(self, res):
+        # res == None means this display was last switched off
+        if res is not None and not res in self._resolutions:
+            raise ValueError("Resolution "+res+" not available for "+self.name+".")
+        self.__lastResolution = res
+        self.hasLastResolution = True
+    
+    def __getLastRes(self):
+        if not self.hasLastResolution:
+            raise ValueError("Connector %s has no last known resolution." % self.name)
+        return self.__lastResolution
+    
+    lastResolution = property(__getLastRes, __setLastRes)
     
     def isConnected(self):
         assert (self.edid is None) == (len(self._resolutions)==0)
@@ -148,7 +179,7 @@ class Connector:
             self.edid += s
     
     def getResolutionList(self):
-        return sorted(self._resolutions, key=lambda r: (0 if r==self.preferredResolution else 1, -r.pixelCount()))
+        return sorted(self._resolutions, key=lambda r: (0 if self.hasLastResolution and r==self.lastResolution else 1, 0 if r==self.preferredResolution else 1, -r.pixelCount()))
 
 class ScreenSituation:
     connectors = [] # contains all the Connector objects
@@ -177,6 +208,7 @@ class ScreenSituation:
         if self.internalConnector == self.externalConnector:
             raise Exception("Internal and external connector are the same. This must not happen. Please fix ~/.dsl.conf.");
         print("Detected external connector:",self.externalConnector)
+        # self.preferredSetup is left uninitialized so you can't access it before trying a lookup in the database
     
     # Run xrandr and fill the dict of connector names mapped to lists of available resolutions.
     def _getXrandrInformation(self):
@@ -262,3 +294,19 @@ class ScreenSituation:
             call += ["--output", name] + connectorArgs[name]
         return call
 
+    def fetchDBInfo(self, db):
+        if self.externalConnector and self.externalConnector.edid:
+            self.preferredSetup = db.getConfig(self.externalConnector.edid) # may also return None
+        else:
+            self.preferredSetup = None
+        if self.preferredSetup:
+            print("SETUP FOUND", self.preferredSetup)
+            self.externalConnector.lastResolution = self.preferredSetup.extResolution
+            self.internalConnector.lastResolution = self.preferredSetup.intResolution
+        else:
+            print("NO SETUP FOUND")
+    
+    def putDBInfo(self, db, setup):
+        if not self.externalConnector or not self.externalConnector.edid:
+            return
+        db.putConfig(self.externalConnector.edid, setup)
