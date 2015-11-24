@@ -208,7 +208,7 @@ class ScreenSituation:
         if self.internalConnector == self.externalConnector:
             raise Exception("Internal and external connector are the same. This must not happen. Please fix ~/.dsl.conf.");
         print("Detected external connector:",self.externalConnector)
-        # self.preferredSetup is left uninitialized so you can't access it before trying a lookup in the database
+        # self.lastSetup is left uninitialized so you can't access it before trying a lookup in the database
     
     # Run xrandr and fill the dict of connector names mapped to lists of available resolutions.
     def _getXrandrInformation(self):
@@ -296,13 +296,13 @@ class ScreenSituation:
 
     def fetchDBInfo(self, db):
         if self.externalConnector and self.externalConnector.edid:
-            self.preferredSetup = db.getConfig(self.externalConnector.edid) # may also return None
+            self.lastSetup = db.getConfig(self.externalConnector.edid) # may also return None
         else:
-            self.preferredSetup = None
-        if self.preferredSetup:
-            print("SETUP FOUND", self.preferredSetup)
-            self.externalConnector.lastResolution = self.preferredSetup.extResolution
-            self.internalConnector.lastResolution = self.preferredSetup.intResolution
+            self.lastSetup = None
+        if self.lastSetup:
+            print("SETUP FOUND", self.lastSetup)
+            self.externalConnector.lastResolution = self.lastSetup.extResolution
+            self.internalConnector.lastResolution = self.lastSetup.intResolution
         else:
             print("NO SETUP FOUND")
     
