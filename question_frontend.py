@@ -40,6 +40,13 @@ class QuestionFrontend:
         return self.userChoose("Select resolution for %s"%displayname, modedescs, availablemodes, None)
 
     def setup (self, situation):
+        if situation.lastSetup:
+            applyLast = self.userChoose("This display is known. The last setup for it was like this:\n%s.\nApply the last used configuration?" % str(situation.lastSetup), ("Apply last setup", "Enter different setup"), (True,False), None)
+            if applyLast is None:
+                return None
+            if applyLast is True:
+                return situation.lastSetup
+            assert applyLast is False
         operationmodes = list(OperationMode)
         operationmodedescs = list(map(lambda x: x.text, operationmodes))
         operationmode = self.userChoose ("Display setup", operationmodedescs, operationmodes, None)

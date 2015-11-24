@@ -47,6 +47,8 @@ class RelativeScreenPosition(Enum):
         cls = self.__class__
         self._value_ = len(cls.__members__) + 1
         self.text = text
+    def __str__(self):
+        return self.text
 
 class Resolution:
     '''Represents a resolution of a screen'''
@@ -134,6 +136,13 @@ class ScreenSetup:
                 RelativeScreenPosition.MIRROR: '--same-as',
             }[self.relPosition], intName]
         return args
+    
+    def __str__(self):
+        if self.intResolution is None:
+            return "External display only, at "+str(self.extResolution)
+        if self.extResolution is None:
+            return "Internal display only, at "+str(self.intResolution)
+        return "External display %s at %s %s internal display %s at %s" % ("(primary)" if self.extIsPrimary else "", str(self.extResolution), str(self.relPosition), "" if self.extIsPrimary else "(primary)", str(self.intResolution))
 
 class Connector:
     def __init__(self, name=None):

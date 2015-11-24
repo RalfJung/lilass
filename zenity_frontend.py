@@ -29,7 +29,7 @@ class ZenityFrontend(QuestionFrontend):
 
     def userChoose (self, title, choices, returns, fallback):
         assert len(choices) == len(returns)
-        args = ["zenity", "--list", "--text="+title, "--column="]+choices
+        args = ["zenity", "--list", "--text="+title, "--column="]+list(choices)
         switch = dict (list(zip (choices,returns)))
         try:
             for line in processOutputIt(*args):

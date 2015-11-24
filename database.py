@@ -60,7 +60,7 @@ class Database:
         _, intres, extres, mode, extprim = result
         intres = Resolution.fromDatabase(intres) # this method is safe for NULLs
         extres = Resolution.fromDatabase(extres)
-        mode = RelativeScreenPosition(mode)
+        mode = RelativeScreenPosition(mode) if mode else None
         extprim = bool(extprim) # 0 => False, 1 => True
         return ScreenSetup(intres, extres, mode, extprim)
     def __exit__(self, type, value, tb):
