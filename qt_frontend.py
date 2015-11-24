@@ -42,12 +42,23 @@ try:
             syncIfMirror(self.intRes, self.extRes)
             syncIfMirror(self.extRes, self.intRes)
 
-            # connect the update function, and make sure we are in a correct state
+            # connect the update function
             self.intEnabled.toggled.connect(self.updateEnabledControls)
             self.extEnabled.toggled.connect(self.updateEnabledControls)
             self.relPos.currentIndexChanged.connect(self.updateEnabledControls)
+
+            # if situation has a lastSetup, use its values as initial state
+            if situation.lastSetup:
+                last = situation.lastSetup
+                self.intEnabled.setChecked(last.intResolution is not None)
+                self.extEnabled.setChecked(last.extResolution is not None)
+                if last.relPosition:
+                    print("YO:",last.relPosition.value-1)
+                    self.relPos.setCurrentIndex(last.relPosition.value-1)
+
+            # make sure we are in a correct state
             self.updateEnabledControls()
-        
+
         def getRelativeScreenPosition(self):
             idx = self.relPos.currentIndex()
             return self.relPos.itemData(idx)
