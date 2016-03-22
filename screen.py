@@ -18,7 +18,6 @@
 
 import re, subprocess
 from enum import Enum
-from fractions import Fraction
 
 ## utility functions
 
@@ -87,8 +86,13 @@ class Resolution:
     
     def __str__(self):
         # get ratio
-        ratio = Fraction(self.width, self.height) # automatically divides by the gcd
-        strRatio = "%d:%d" % (ratio.numerator, ratio.denominator)
+        ratio = int(round(16.0*self.height/self.width))
+        if ratio == 12: # 16:12 = 4:3
+            strRatio = '4:3'
+        elif ratio == 13: # 16:12.8 = 5:4
+            strRatio = '5:4'
+        else: # let's just hope this will never be 14 or more...
+            strRatio = '16:%d' % ratio
         return '%dx%d (%s)' %(self.width, self.height, strRatio)
     
     def __repr__(self):
