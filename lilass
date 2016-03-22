@@ -20,7 +20,7 @@ import argparse, sys, os, os.path, shutil, re, subprocess
 from enum import Enum
 import gui, screen, util, database
 frontend = gui.getFrontend("cli") # the fallback, until we got a proper frontend. This is guaranteed to be available.
-
+cmdArgs = None
 
 # for auto-config: common names of internal connectors
 commonInternalConnectorPrefixes = ['LVDS', 'eDP']
@@ -104,16 +104,19 @@ if __name__ == "__main__":
                             help="The frontend to be used for user interaction")
         parser.add_argument("-r", "--relative-position",
                             dest="rel_position", choices=list(map(relPosFilter, screen.RelativeScreenPosition.__members__.keys())),
-                            help="Set the position of external screen relative to internal one.")
+                            help="Set the position of external screen relative to internal one, in case it is not found in the DB.")
         parser.add_argument("-e", "--external-only",
                             dest="external_only", action='store_true',
                             help="If an external screen is connected, disable all the others.")
         parser.add_argument("-i", "--internal-only",
                             dest="internal_only", action='store_true',
                             help="Enable internal screen, disable all the others.")
-        parser.add_argument("-s", "--show",
-                            dest="show", choices=ShowLevels.getNames(), default=ShowLevels.ONEXTERNAL.text,
-                            help="In which situations should the UI be displayed?")
+        parser.add_argument("-s", "--silent",
+                            dest="silent", action='store_true',
+                            help="Prefer to be silent: Opens a UI only if the external screen is not known *and* no default configuration (-r/-e/-i) is given.")
+        parser.add_argument("-v", "--verbose",
+                            dest="verbose", action='store_true',
+                            help="More verbose output on stderr.")
         cmdArgs = parser.parse_args()
     
         # load frontend early (for error mssages)
@@ -139,17 +142,29 @@ if __name__ == "__main__":
         # see what situation we are in
         situation = situationByConfig(config)
         
-        # fetch info from the database
-        # if it is too slow to open the DB twice (reading and saving), we can keep it open all the time
-        with database.Database(databaseFilePath) as db:
-            situation.fetchDBInfo(db)
-        
         # construct the ScreenSetup
         setup = None
-        if not cmdArgs.internal_only and situation.externalResolutions() is not None:
-            # there's an external screen connected that we may want to use
-            if cmdArgs.external_only:
-                setup = screen.ScreenSetup(intResolution = None, extResolution = situation.externalResolutions()[0])
+        if situation.externalConnector is not None:
+            # There's an external screen connected that we may want to use.
+            # Fetch info about this screen from the database.
+            # NOTE: If it is too slow to open the DB twice (reading and saving), we can keep it open all the time
+            with database.Database(databaseFilePath) as db:
+                situation.fetchDBInfo(db)
+            # what to we do?
+            have_default_conf = bool(cmdArgs.external_only or cmdArgs.internal_only or cmdArgs.rel_position)
+            no_ui = bool(have_default_conf or (situation.previousSetup and cmdArgs.silent))
+            if not no_ui:
+                # ask the user what to do
+                setup = frontend.setup(situation)
+                if setup is None: sys.exit(1) # the user canceled
+                with database.Database(databaseFilePath) as db:
+                    situation.putDBInfo(db, setup)
+            elif situation.previousSetup:
+                # apply the old setup again
+                setup = situation.previousSetup
+            # use default config from CLI
+            elif cmdArgs.external_only:
+                setup = screen.ScreenSetup(intResolution = None, extResolution = situation.externalConnector.getPreferredResolution())
             elif cmdArgs.rel_position is not None:
                 # construct automatically, based on CLI arguments
                 # first, figure out the desired RelativeScreenPosition... waht a bad hack...
@@ -161,26 +176,14 @@ if __name__ == "__main__":
                     res = situation.commonResolutions()[0]
                     setup = screen.ScreenSetup(res, res, relPos)
                 else:
-                    setup = screen.ScreenSetup(intResolution = situation.internalResolutions()[0], extResolution = situation.externalResolutions()[0], relPosition = relPos)
-            else:
-                showlvl = ShowLevels(cmdArgs.show)
-                if showlvl != ShowLevels.ONEXTERNAL and situation.lastSetup:
-                    # use last config
-                    setup = situation.lastSetup
-                elif showlvl == ShowLevels.ONERROR:
-                    # guess config
-                    setup = screen.ScreenSetup(situation.internalResolutions()[0], situation.externalResolutions()[0], screen.RelativeScreenPosition.RIGHT)
-                    # TODO make default relative position configurable in the config file
-                    # TODO this has a bit of code duplication with the cmdArgs method above
-                else:
-                    # ask the user
-                    setup = frontend.setup(situation)
-                    if setup is None: sys.exit(1) # the user canceled
-                    with database.Database(databaseFilePath) as db:
-                        situation.putDBInfo(db, setup)
-        else:
-            # use first resolution of internal connector
-            setup = screen.ScreenSetup(intResolution = situation.internalConnector.getResolutionList()[0], extResolution = None)
+                    setup = screen.ScreenSetup(intResolution = situation.internalConnector.getPreferredResolution(),
+                                               extResolution = situation.externalConnector.getPreferredResolution(),
+                                               relPosition = relPos)
+            # cmdArgs.internal_only: fall-through
+        if setup is None:
+            assert cmdArgs.internal_only or situation.externalConnector is None
+            # Nothing chosen yet? Use first resolution of internal connector.
+            setup = screen.ScreenSetup(intResolution = situation.internalConnector.getPreferredResolution(), extResolution = None)
         
         # call xrandr
         xrandrCall = situation.forXrandr(setup)
@@ -191,5 +194,6 @@ if __name__ == "__main__":
         if setup.extResolution is None:
             turnOnBacklight()
     except Exception as e:
-        raise e
         frontend.error(str(e))
+        if cmdArgs is None or cmdArgs.verbose:
+            raise(e)

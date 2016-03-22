@@ -152,9 +152,9 @@ class Connector:
     def __init__(self, name=None):
         self.name = name # connector name, e.g. "HDMI1"
         self.edid = None # EDID string for the connector, or None if disconnected
-        self._resolutions = set() # list of Resolution objects, empty if disconnected
-        self.preferredResolution = None
-        self.__lastResolution = None
+        self._resolutions = set() # set of Resolution objects, empty if disconnected
+        self._preferredResolution = None
+        self.previousResolution = None
         self.hasLastResolution = False
     
     def __str__(self):
@@ -163,22 +163,8 @@ class Connector:
     def __repr__(self):
         return """<Connector "%s" EDID="%s" resolutions="%s">""" % (str(self.name), str(self.edid), ", ".join(str(r) for r in self.getResolutionList()))
     
-    def __setLastRes(self, res):
-        # res == None means this display was last switched off
-        if res is not None and not res in self._resolutions:
-            raise ValueError("Resolution "+res+" not available for "+self.name+".")
-        self.__lastResolution = res
-        self.hasLastResolution = True
-    
-    def __getLastRes(self):
-        if not self.hasLastResolution:
-            raise ValueError("Connector %s has no last known resolution." % self.name)
-        return self.__lastResolution
-    
-    lastResolution = property(__getLastRes, __setLastRes)
-    
     def isConnected(self):
-        assert (self.edid is None) == (len(self._resolutions)==0)
+        assert (self.edid is None) == (len(self._resolutions)==0), "Resolution-EDID mismatch; #resolutions: {}".format(len(self._resolutions))
         return self.edid is not None
     
     def addResolution(self, resolution):
@@ -191,13 +177,23 @@ class Connector:
         else:
             self.edid += s
     
+    def setPreferredResolution(self, resolution):
+        assert isinstance(resolution, Resolution) and resolution in self._resolutions
+        self._preferredResolution = resolution
+    
+    def getPreferredResolution(self):
+        if self._preferredResolution is not None:
+            return self._preferredResolution
+        return self.getResolutionList()[0] # prefer the largest resolution
+    
     def getResolutionList(self):
-        return sorted(self._resolutions, key=lambda r: (0 if self.hasLastResolution and r==self.lastResolution else 1, 0 if r==self.preferredResolution else 1, -r.pixelCount()))
+        return sorted(self._resolutions, key=lambda r: -r.pixelCount())
 
 class ScreenSituation:
     connectors = [] # contains all the Connector objects
     internalConnector = None # the internal Connector object (will be an enabled one)
     externalConnector = None # the used external Connector object (an enabled one), or None
+    previousSetup = None # None or the ScreenSetup used the last time this external screen was connected
     
     '''Represents the "screen situation" a machine can be in: Which connectors exist, which resolutions do they have, what are the names for the internal and external screen'''
     def __init__(self, internalConnectorNames, externalConnectorNames = None):
@@ -205,9 +201,6 @@ class ScreenSituation:
            just choose any remaining connector.'''
         # which connectors are there?
         self._getXrandrInformation()
-        for c in self.connectors:
-            print(repr(c))
-            print()
         # figure out which is the internal connector
         self.internalConnector = self._findAvailableConnector(internalConnectorNames)
         if self.internalConnector is None:
@@ -221,7 +214,6 @@ class ScreenSituation:
         if self.internalConnector == self.externalConnector:
             raise Exception("Internal and external connector are the same. This must not happen. Please fix ~/.dsl.conf.");
         print("Detected external connector:",self.externalConnector)
-        # self.lastSetup is left uninitialized so you can't access it before trying a lookup in the database
     
     # Run xrandr and fill the dict of connector names mapped to lists of available resolutions.
     def _getXrandrInformation(self):
@@ -246,7 +238,9 @@ class ScreenSituation:
             if m is not None:
                 connector = Connector(m.group(1))
                 assert not any(c.name == connector.name for c in self.connectors)
-                self.connectors.append(connector)
+                if not connector.name.startswith("VIRTUAL"):
+                    # skip "VIRTUAL" connectors
+                    self.connectors.append(connector)
                 continue
             # new resolution?
             m = re.search(r'^\s*([\d]+)x([\d]+)', line)
@@ -254,8 +248,8 @@ class ScreenSituation:
                 resolution = Resolution(int(m.group(1)), int(m.group(2)))
                 assert connector is not None
                 connector.addResolution(resolution)
-                if '+preferred' in line:
-                    connector.preferredResolution = resolution
+                if re.search(r' [+]preferred\b', line):
+                    connector.setPreferredResolution(resolution)
                 continue
             # EDID?
             m = re.search(r'^\s*EDID:\s*$', line)
@@ -263,8 +257,7 @@ class ScreenSituation:
                 readingEdid = True
                 continue
             # unknown line
-            # not fatal, e.g. xrandr shows strange stuff when a display is enabled, but not connected
-            #print("Warning: Unknown xrandr line %s" % line)
+            # not fatal, e.g. xrandr shows strange stuff when a display is enabled, but not connected; --verbose adds a whole lot of other weird stuff
     
     # return the first available connector from those listed in <tryConnectorNames>, skipping disabled connectors
     def _findAvailableConnector(self, tryConnectorNames):
@@ -272,21 +265,11 @@ class ScreenSituation:
             return c
         return None
     
-    # return available internal resolutions
-    def internalResolutions(self):
-        return self.internalConnector.getResolutionList()
-    
-    # return available external resolutions (or None, if there is no external screen connected)
-    def externalResolutions(self):
-        if self.externalConnector is None:
-            return None
-        return self.externalConnector.getResolutionList()
-    
     # return resolutions available for both internal and external screen
     def commonResolutions(self):
-        internalRes = self.internalResolutions()
-        externalRes = self.externalResolutions()
-        assert externalRes is not None
+        assert self.externalConnector is not None, "Common resolutions may only be queried if there is an external screen connected."
+        internalRes = self.internalConnector.getResolutionList()
+        externalRes = self.externalConnector.getResolutionList()
         return sorted(set(externalRes).intersection(internalRes), key=lambda r: -r.pixelCount())
     
     # compute the xrandr call
@@ -309,15 +292,13 @@ class ScreenSituation:
 
     def fetchDBInfo(self, db):
         if self.externalConnector and self.externalConnector.edid:
-            self.lastSetup = db.getConfig(self.externalConnector.edid) # may also return None
+            self.previousSetup = db.getConfig(self.externalConnector.edid) # may also return None
         else:
-            self.lastSetup = None
-        if self.lastSetup:
-            print("SETUP FOUND", self.lastSetup)
-            self.externalConnector.lastResolution = self.lastSetup.extResolution
-            self.internalConnector.lastResolution = self.lastSetup.intResolution
-        else:
-            print("NO SETUP FOUND")
+            self.previousSetup = None
+        if self.previousSetup:
+            print("Known screen, previous setup:", self.previousSetup)
+            self.externalConnector.previousResolution = self.previousSetup.extResolution
+            self.internalConnector.previousResolution = self.previousSetup.intResolution
     
     def putDBInfo(self, db, setup):
         if not self.externalConnector or not self.externalConnector.edid:

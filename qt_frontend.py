@@ -42,18 +42,30 @@ try:
             syncIfMirror(self.intRes, self.extRes)
             syncIfMirror(self.extRes, self.intRes)
 
+            # if situation has a previousSetup, use its values as initial state
+            if situation.previousSetup:
+                p = situation.previousSetup
+                self.intEnabled.setChecked(p.intResolution is not None)
+                self.extEnabled.setChecked(p.extResolution is not None)
+                if p.relPosition:
+                    self.relPos.setCurrentIndex(p.relPosition.value - 1)
+                if p.extIsPrimary:
+                    self.extPrimary.setChecked(True)
+                else:
+                    self.intPrimary.setChecked(True)
+                # Pre-select the previous resolution
+                self._intDefaultRes = p.intResolution
+                self._extDefaultRes = p.extResolution
+                self._mirrorDefaultRes = p.intResolution if p.relPosition == RelativeScreenPosition.MIRROR else None # in case of a mirror, they would be the same anyway
+            else:
+                self._intDefaultRes = situation.internalConnector.getPreferredResolution()
+                self._extDefaultRes = situation.externalConnector.getPreferredResolution()
+                self._mirrorDefaultRes = None
+
             # connect the update function
             self.intEnabled.toggled.connect(self.updateEnabledControls)
             self.extEnabled.toggled.connect(self.updateEnabledControls)
             self.relPos.currentIndexChanged.connect(self.updateEnabledControls)
-
-            # if situation has a lastSetup, use its values as initial state
-            if situation.lastSetup:
-                last = situation.lastSetup
-                self.intEnabled.setChecked(last.intResolution is not None)
-                self.extEnabled.setChecked(last.extResolution is not None)
-                if last.relPosition:
-                    self.relPos.setCurrentIndex(last.relPosition.value-1)
 
             # make sure we are in a correct state
             self.updateEnabledControls()
@@ -62,12 +74,14 @@ try:
             idx = self.relPos.currentIndex()
             return self.relPos.itemData(idx)
         
-        def fillResolutionBox(self, box, resolutions):
+        def fillResolutionBox(self, box, resolutions, select = None):
             # if the count did not change, update in-place (this avoids flicker)
             if box.count() == len(resolutions):
                 for idx, res in enumerate(resolutions):
                     box.setItemText(idx, str(res))
                     box.setItemData(idx, res)
+                    if res == select:
+                        box.setCurrentIndex(idx)
             else:
                 # first clear it
                 while box.count() > 0:
@@ -75,6 +89,8 @@ try:
                 # then fill it
                 for res in resolutions:
                     box.addItem(str(res), res)
+                    if res == select:
+                        box.setCurrentIndex(box.count() - 1) # select the most recently added one
         
         def updateEnabledControls(self):
             intEnabled = self.intEnabled.isChecked()
@@ -93,12 +109,12 @@ try:
             # which resolutions do we offer?
             if self.isMirror:
                 commonRes = self._situation.commonResolutions()
-                self.fillResolutionBox(self.intRes, commonRes)
-                self.fillResolutionBox(self.extRes, commonRes)
+                self.fillResolutionBox(self.intRes, commonRes, select = self._mirrorDefaultRes)
+                self.fillResolutionBox(self.extRes, commonRes, select = self._mirrorDefaultRes)
                 self.intRes.setCurrentIndex(self.extRes.currentIndex())
             else:
-                self.fillResolutionBox(self.intRes, self._situation.internalResolutions())
-                self.fillResolutionBox(self.extRes, self._situation.externalResolutions())
+                self.fillResolutionBox(self.intRes, self._situation.internalConnector.getResolutionList(), select = self._intDefaultRes)
+                self.fillResolutionBox(self.extRes, self._situation.externalConnector.getResolutionList(), select = self._extDefaultRes)
             # configure position control
             self.posGroup.setEnabled(bothEnabled)
             self.posLabel1.setEnabled(bothEnabled)
