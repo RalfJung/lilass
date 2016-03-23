@@ -87,7 +87,9 @@ class Resolution:
     def __str__(self):
         # get ratio
         ratio = int(round(16.0*self.height/self.width))
-        if ratio == 12: # 16:12 = 4:3
+        if ratio == 11: # 16:10.66 = 3:2
+            strRatio = "3:2"
+        elif ratio == 12: # 16:12 = 4:3
             strRatio = '4:3'
         elif ratio == 13: # 16:12.8 = 5:4
             strRatio = '5:4'

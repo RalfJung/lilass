@@ -11,6 +11,7 @@ class TestResolutions(unittest.TestCase):
       self.assertEqual(str(screen.Resolution(1366, 768)), '1366x768 (16:9)')
       self.assertEqual(str(screen.Resolution(1920, 1080)), '1920x1080 (16:9)')
       self.assertEqual(str(screen.Resolution(1920, 1200)), '1920x1200 (16:10)')
+      self.assertEqual(str(screen.Resolution(720, 480)), '720x480 (3:2)')
 
 if __name__ == '__main__':
     unittest.main()
