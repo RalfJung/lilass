@@ -78,19 +78,6 @@ def situationByConfig(config):
     # run!
     return screen.ScreenSituation(internalConnectors, config.get('externalConnectors'))
 
-class ShowLevels(Enum):
-    ONEXTERNAL = ("on-external")
-    ONNEW = ("on-new")
-    ONERROR = ("on-error")
-    def __init__(self, text):
-        # auto numbering
-        cls = self.__class__
-        self._value_ = len(cls.__members__) + 1
-        self.text = text
-    @classmethod
-    def getNames(cls):
-        return list(x.text for x in cls)
-
 # if we run top-level
 if __name__ == "__main__":
     try:
