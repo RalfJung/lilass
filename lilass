@@ -114,6 +114,9 @@ if __name__ == "__main__":
         parser.add_argument("-s", "--silent",
                             dest="silent", action='store_true',
                             help="Prefer to be silent: Opens a UI only if the external screen is not known *and* no default configuration (-r/-e/-i) is given.")
+        parser.add_argument("--no-db",
+                            dest="use_db", action='store_false',
+                            help="Do not use the database of known screens.")
         parser.add_argument("-v", "--verbose",
                             dest="verbose", action='store_true',
                             help="More verbose output on stderr.")
@@ -148,8 +151,9 @@ if __name__ == "__main__":
             # There's an external screen connected that we may want to use.
             # Fetch info about this screen from the database.
             # NOTE: If it is too slow to open the DB twice (reading and saving), we can keep it open all the time
-            with database.Database(databaseFilePath) as db:
-                situation.fetchDBInfo(db)
+            if cmdArgs.use_db:
+                with database.Database(databaseFilePath) as db:
+                    situation.fetchDBInfo(db)
             # what to we do?
             have_default_conf = bool(cmdArgs.external_only or cmdArgs.internal_only or cmdArgs.rel_position)
             no_ui = bool(have_default_conf or (situation.previousSetup and cmdArgs.silent))
@@ -157,8 +161,10 @@ if __name__ == "__main__":
                 # ask the user what to do
                 setup = frontend.setup(situation)
                 if setup is None: sys.exit(1) # the user canceled
-                with database.Database(databaseFilePath) as db:
-                    situation.putDBInfo(db, setup)
+                if cmdArgs.use_db:
+                    # persists this to disk
+                    with database.Database(databaseFilePath) as db:
+                        situation.putDBInfo(db, setup)
             elif situation.previousSetup:
                 # apply the old setup again
                 setup = situation.previousSetup
