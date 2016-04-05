@@ -53,13 +53,13 @@ class QuestionFrontend:
         if operationmode is None:
             return None
         elif operationmode is OperationMode.INTERNAL_ONLY:
-            intres = self.selectResolution("the internal screen", situation.internalResolutions())
+            intres = self.selectResolution("the internal screen", situation.internalConnector.getResolutionList())
             if intres is None:
                 return None
             else:
                 return ScreenSetup(intres, None, None, False)
         elif operationmode is OperationMode.EXTERNAL_ONLY:
-            extres = self.selectResolution("the external screen", situation.externalResolutions())
+            extres = self.selectResolution("the external screen", situation.externalConnector.getResolutionList())
             if extres is None:
                 return None
             else:
@@ -78,10 +78,10 @@ class QuestionFrontend:
                     return None
                 return ScreenSetup(commonres,commonres,relpos,False)
             # select resolutions independently
-            intres = self.selectResolution("the internal screen", situation.internalResolutions())
+            intres = self.selectResolution("the internal screen", situation.internalConnector.getResolutionList())
             if intres is None:
                 return None
-            extres = self.selectResolution("the external screen", situation.externalResolutions())
+            extres = self.selectResolution("the external screen", situation.externalConnector.getResolutionList())
             if extres is None:
                 return None
             extprim = self.userChoose("Select primary screen", ["Internal screen is primary","External screen is primary"], [False,True], None)
