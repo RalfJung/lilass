@@ -5,11 +5,11 @@ reproducible, describe at least what you did when you saw the bug.)
 
 ## Actual behavior
 
-(Descrbe what you see happening.)
+(Describe what you see happening.)
 
 ## Expected behavior
 
-(Describe waht you expected to see happening instead.)
+(Describe what you expected to see happening instead.)
 
 ## Further information
 
