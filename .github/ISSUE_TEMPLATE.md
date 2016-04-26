@@ -1,6 +1,6 @@
 ## Steps to reproduce
 
-(Describe, step-by-step, how the bug can be reproduced. if the bug is not
+(Describe, step-by-step, how the bug can be reproduced. If the bug is not
 reproducible, describe at least what you did when you saw the bug.)
 
 ## Actual behavior
