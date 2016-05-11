@@ -78,7 +78,7 @@ connector not mentioned in either option will be completely ignored.
 ## Source, License
 
 You can find the sources in the
-[git repository](http://git.ralfj.de/lilass.git) (also available
+[git repository](https://git.ralfj.de/lilass.git) (also available
 [on GitHub](https://github.com/RalfJung/lilass)). They are provided under the
 [GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) or (at your
 option) any later version of the GPL.  See the file `LICENSE-GPL2` for more
