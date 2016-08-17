@@ -198,11 +198,11 @@ class ScreenSituation:
     previousSetup = None # None or the ScreenSetup used the last time this external screen was connected
     
     '''Represents the "screen situation" a machine can be in: Which connectors exist, which resolutions do they have, what are the names for the internal and external screen'''
-    def __init__(self, internalConnectorNames, externalConnectorNames = None):
+    def __init__(self, internalConnectorNames, externalConnectorNames = None, xrandrSource = None):
         '''Both arguments are lists of connector names. The first one which exists and has a screen attached is chosen for that class. <externalConnectorNames> can be None to
            just choose any remaining connector.'''
         # which connectors are there?
-        self._getXrandrInformation()
+        self._getXrandrInformation(xrandrSource)
         # figure out which is the internal connector
         self.internalConnector = self._findAvailableConnector(internalConnectorNames)
         if self.internalConnector is None:
@@ -218,9 +218,11 @@ class ScreenSituation:
         print("Detected external connector:",self.externalConnector)
     
     # Run xrandr and fill the dict of connector names mapped to lists of available resolutions.
-    def _getXrandrInformation(self):
+    def _getXrandrInformation(self, xrandrSource = None):
         connector = None # current connector
         readingEdid = False
+        if xrandrSource is None:
+            xrandrSource = processOutputGen("xrandr", "-q", "--verbose")
         for line in processOutputGen("xrandr", "-q", "--verbose"):
             if readingEdid:
                 m = re.match(r'^\s*([0-9a-f]+)\s*$', line)
