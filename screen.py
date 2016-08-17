@@ -32,6 +32,14 @@ def processOutputGen(*args):
 def processOutputIt(*args):
     return list(processOutputGen(*args)) # list() iterates over the generator
 
+# for auto-config: common names of internal connectors
+def commonInternalConnectorNames():
+    commonInternalConnectorPrefixes = ['LVDS', 'eDP']
+    commonInternalConnectorSuffices = ['', '0', '1', '-0', '-1']
+    for prefix in commonInternalConnectorPrefixes:
+        for suffix in commonInternalConnectorSuffices:
+            yield prefix+suffix
+
 ## the classes
 
 class RelativeScreenPosition(Enum):
@@ -153,7 +161,7 @@ class ScreenSetup:
 class Connector:
     def __init__(self, name=None):
         self.name = name # connector name, e.g. "HDMI1"
-        self.edid = None # EDID string for the connector, or None if disconnected
+        self.edid = None # EDID string for the connector, or None if disconnected / unavailable
         self._resolutions = set() # set of Resolution objects, empty if disconnected
         self._preferredResolution = None
         self.previousResolution = None
@@ -166,8 +174,8 @@ class Connector:
         return """<Connector "%s" EDID="%s" resolutions="%s">""" % (str(self.name), str(self.edid), ", ".join(str(r) for r in self.getResolutionList()))
     
     def isConnected(self):
-        assert (self.edid is None) == (len(self._resolutions)==0), "Resolution-EDID mismatch; #resolutions: {}".format(len(self._resolutions))
-        return self.edid is not None
+        # It is very possible not to have an EDID even for a connected connector
+        return len(self._resolutions) > 0
     
     def addResolution(self, resolution):
         assert isinstance(resolution, Resolution)
@@ -192,7 +200,7 @@ class Connector:
         return sorted(self._resolutions, key=lambda r: -r.pixelCount())
 
 class ScreenSituation:
-    connectors = [] # contains all the Connector objects
+    connectors = None # contains all the Connector objects
     internalConnector = None # the internal Connector object (will be an enabled one)
     externalConnector = None # the used external Connector object (an enabled one), or None
     previousSetup = None # None or the ScreenSetup used the last time this external screen was connected
@@ -202,6 +210,7 @@ class ScreenSituation:
         '''Both arguments are lists of connector names. The first one which exists and has a screen attached is chosen for that class. <externalConnectorNames> can be None to
            just choose any remaining connector.'''
         # which connectors are there?
+        self.connectors = []
         self._getXrandrInformation(xrandrSource)
         # figure out which is the internal connector
         self.internalConnector = self._findAvailableConnector(internalConnectorNames)
@@ -223,7 +232,7 @@ class ScreenSituation:
         readingEdid = False
         if xrandrSource is None:
             xrandrSource = processOutputGen("xrandr", "-q", "--verbose")
-        for line in processOutputGen("xrandr", "-q", "--verbose"):
+        for line in xrandrSource:
             if readingEdid:
                 m = re.match(r'^\s*([0-9a-f]+)\s*$', line)
                 if m is not None:
@@ -241,7 +250,7 @@ class ScreenSituation:
             m = re.search(r'^([\w\-]+) (dis)?connected ', line)
             if m is not None:
                 connector = Connector(m.group(1))
-                assert not any(c.name == connector.name for c in self.connectors)
+                assert not any(c.name == connector.name for c in self.connectors), "Duplicate connector {}".format(connector.name)
                 if not connector.name.startswith("VIRTUAL"):
                     # skip "VIRTUAL" connectors
                     self.connectors.append(connector)

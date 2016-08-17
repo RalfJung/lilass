@@ -1,0 +1,136 @@
+Screen 0: minimum 8 x 8, current 1366 x 768, maximum 32767 x 32767
+LVDS1 connected 1366x768+0+0 (0x48) normal (normal left inverted right x axis y axis) 344mm x 194mm
+	Identifier: 0x42
+	Timestamp:  30808024
+	Subpixel:   horizontal rgb
+	Gamma:      1.0:1.0:1.0
+	Brightness: 1.0
+	Clones:    
+	CRTC:       0
+	CRTCs:      0 1
+	Transform:  1.000000 0.000000 0.000000
+	            0.000000 1.000000 0.000000
+	            0.000000 0.000000 1.000000
+	           filter: 
+	EDID: 
+		00ffffffffffff0030e4e30200000000
+		00140103802213780aa9059f5e589c26
+		19505400000001010101010101010101
+		010101010101581b567e50000e302430
+		350058c2100000190000000000000000
+		00000000000000000000000000fe004c
+		4720446973706c61790a2020000000fe
+		004c503135365748342d544c42310071
+	BACKLIGHT: 4216 
+		range: (0, 4882)
+	Backlight: 4216 
+		range: (0, 4882)
+	scaling mode: Full aspect 
+		supported: None, Full, Center, Full aspect
+  1366x768 (0x48) 70.000MHz -HSync -VSync *current +preferred
+        h: width  1366 start 1402 end 1450 total 1492 skew    0 clock  46.92KHz
+        v: height  768 start  771 end  776 total  782           clock  60.00Hz
+  1360x768 (0xd1) 84.750MHz -HSync +VSync
+        h: width  1360 start 1432 end 1568 total 1776 skew    0 clock  47.72KHz
+        v: height  768 start  771 end  781 total  798           clock  59.80Hz
+  1360x768 (0xd2) 72.000MHz +HSync -VSync
+        h: width  1360 start 1408 end 1440 total 1520 skew    0 clock  47.37KHz
+        v: height  768 start  771 end  781 total  790           clock  59.96Hz
+  1280x720 (0xd3) 74.480MHz -HSync +VSync
+        h: width  1280 start 1336 end 1472 total 1664 skew    0 clock  44.76KHz
+        v: height  720 start  721 end  724 total  746           clock  60.00Hz
+  1024x768 (0xd4) 65.000MHz -HSync -VSync
+        h: width  1024 start 1048 end 1184 total 1344 skew    0 clock  48.36KHz
+        v: height  768 start  771 end  777 total  806           clock  60.00Hz
+  1024x576 (0xd5) 46.995MHz -HSync +VSync
+        h: width  1024 start 1064 end 1168 total 1312 skew    0 clock  35.82KHz
+        v: height  576 start  577 end  580 total  597           clock  60.00Hz
+  960x540 (0xd6) 40.784MHz -HSync +VSync
+        h: width   960 start  992 end 1088 total 1216 skew    0 clock  33.54KHz
+        v: height  540 start  541 end  544 total  559           clock  60.00Hz
+  800x600 (0xd7) 40.000MHz +HSync +VSync
+        h: width   800 start  840 end  968 total 1056 skew    0 clock  37.88KHz
+        v: height  600 start  601 end  605 total  628           clock  60.32Hz
+  800x600 (0xd8) 36.000MHz +HSync +VSync
+        h: width   800 start  824 end  896 total 1024 skew    0 clock  35.16KHz
+        v: height  600 start  601 end  603 total  625           clock  56.25Hz
+  864x486 (0xd9) 32.901MHz -HSync +VSync
+        h: width   864 start  888 end  976 total 1088 skew    0 clock  30.24KHz
+        v: height  486 start  487 end  490 total  504           clock  60.00Hz
+  640x480 (0xda) 25.175MHz -HSync -VSync
+        h: width   640 start  656 end  752 total  800 skew    0 clock  31.47KHz
+        v: height  480 start  490 end  492 total  525           clock  59.94Hz
+  720x405 (0xdb) 22.176MHz -HSync +VSync
+        h: width   720 start  728 end  800 total  880 skew    0 clock  25.20KHz
+        v: height  405 start  406 end  409 total  420           clock  60.00Hz
+  680x384 (0xdc) 19.677MHz -HSync +VSync
+        h: width   680 start  688 end  752 total  824 skew    0 clock  23.88KHz
+        v: height  384 start  385 end  388 total  398           clock  60.00Hz
+  640x360 (0xdd) 17.187MHz -HSync +VSync
+        h: width   640 start  640 end  704 total  768 skew    0 clock  22.38KHz
+        v: height  360 start  361 end  364 total  373           clock  60.00Hz
+DP1 disconnected (normal left inverted right x axis y axis)
+	Identifier: 0x43
+	Timestamp:  30808024
+	Subpixel:   unknown
+	Clones:    
+	CRTCs:      0 1
+	Transform:  1.000000 0.000000 0.000000
+	            0.000000 1.000000 0.000000
+	            0.000000 0.000000 1.000000
+	           filter: 
+	Broadcast RGB: Automatic 
+		supported: Automatic, Full, Limited 16:235
+	audio: auto 
+		supported: force-dvi, off, auto, on
+HDMI1 disconnected primary (normal left inverted right x axis y axis)
+	Identifier: 0x44
+	Timestamp:  30808024
+	Subpixel:   unknown
+	Clones:     VGA1
+	CRTCs:      0 1
+	Transform:  1.000000 0.000000 0.000000
+	            0.000000 1.000000 0.000000
+	            0.000000 0.000000 1.000000
+	           filter: 
+	aspect ratio: Automatic 
+		supported: Automatic, 4:3, 16:9
+	Broadcast RGB: Automatic 
+		supported: Automatic, Full, Limited 16:235
+	audio: auto 
+		supported: force-dvi, off, auto, on
+VGA1 connected (normal left inverted right x axis y axis)
+	Identifier: 0x45
+	Timestamp:  30808024
+	Subpixel:   unknown
+	Clones:     HDMI1
+	CRTCs:      0 1
+	Transform:  1.000000 0.000000 0.000000
+	            0.000000 1.000000 0.000000
+	            0.000000 0.000000 1.000000
+	           filter: 
+  1024x768 (0xd4) 65.000MHz -HSync -VSync
+        h: width  1024 start 1048 end 1184 total 1344 skew    0 clock  48.36KHz
+        v: height  768 start  771 end  777 total  806           clock  60.00Hz
+  800x600 (0xd7) 40.000MHz +HSync +VSync
+        h: width   800 start  840 end  968 total 1056 skew    0 clock  37.88KHz
+        v: height  600 start  601 end  605 total  628           clock  60.32Hz
+  800x600 (0xd8) 36.000MHz +HSync +VSync
+        h: width   800 start  824 end  896 total 1024 skew    0 clock  35.16KHz
+        v: height  600 start  601 end  603 total  625           clock  56.25Hz
+  848x480 (0x208) 33.750MHz +HSync +VSync
+        h: width   848 start  864 end  976 total 1088 skew    0 clock  31.02KHz
+        v: height  480 start  486 end  494 total  517           clock  60.00Hz
+  640x480 (0xda) 25.175MHz -HSync -VSync
+        h: width   640 start  656 end  752 total  800 skew    0 clock  31.47KHz
+        v: height  480 start  490 end  492 total  525           clock  59.94Hz
+VIRTUAL1 disconnected (normal left inverted right x axis y axis)
+	Identifier: 0x46
+	Timestamp:  30808024
+	Subpixel:   no subpixels
+	Clones:    
+	CRTCs:      2
+	Transform:  1.000000 0.000000 0.000000
+	            0.000000 1.000000 0.000000
+	            0.000000 0.000000 1.000000
+	           filter: 

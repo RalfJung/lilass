@@ -22,14 +22,6 @@ import gui, screen, util, database
 frontend = gui.getFrontend("cli") # the fallback, until we got a proper frontend. This is guaranteed to be available.
 cmdArgs = None
 
-# for auto-config: common names of internal connectors
-commonInternalConnectorPrefixes = ['LVDS', 'eDP']
-commonInternalConnectorSuffices = ['', '0', '1', '-0', '-1']
-def commonInternalConnectorNames():
-    for prefix in commonInternalConnectorPrefixes:
-        for suffix in commonInternalConnectorSuffices:
-            yield prefix+suffix
-
 # Load a section-less config file: maps parameter names to space-separated lists of strings (with shell quotation)
 def loadConfigFile(filename):
     import shlex
@@ -74,7 +66,7 @@ def situationByConfig(config):
             raise Exception("You must specify exactly one internal connector.")
         internalConnectors = config['internalConnector']
     else:
-        internalConnectors = commonInternalConnectorNames()
+        internalConnectors = screen.commonInternalConnectorNames()
     # run!
     return screen.ScreenSituation(internalConnectors, config.get('externalConnectors'))
 
@@ -160,9 +152,9 @@ if __name__ == "__main__":
                 setup = screen.ScreenSetup(intResolution = None, extResolution = situation.externalConnector.getPreferredResolution())
             elif cmdArgs.rel_position is not None:
                 # construct automatically, based on CLI arguments
-                # first, figure out the desired RelativeScreenPosition... waht a bad hack...
+                # first, figure out the desired RelativeScreenPosition... what a bad hack...
                 relPos = list(filter(lambda relPosItem: relPosFilter(relPosItem[0]) == cmdArgs.rel_position, screen.RelativeScreenPosition.__members__.items()))
-                assert len(relPos) == 1, "CLI argument is ambigue"
+                assert len(relPos) == 1, "CLI argument is ambiguous"
                 relPos = relPos[0][1]
                 # now we construct the ScreenSetup
                 if relPos == screen.RelativeScreenPosition.MIRROR:
