@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This is the documentation of [LiLaSS]( https://www.ralfj.de/projects/lilass), a 
+This is the documentation of [LiLaSS](https://www.ralfj.de/projects/lilass), a
 tool to setup screens on a Linux-powered Laptop.
 
 LiLaSS is targeted for a specific use-case: The laptop is used both with the
